@@ -1,6 +1,7 @@
 package com.serendipity.ecommerce.repository;
 
 import com.serendipity.ecommerce.domain.Usuario;
+import com.serendipity.ecommerce.dto.UsuarioDTO;
 
 import java.util.Collection;
 
@@ -13,4 +14,17 @@ public interface UsuarioRepository<T extends Usuario> {
     Boolean delete(Long id);
 
     /* More Complex Operations */
+    Usuario getUsuarioByEmail(String email);
+
+    void sendVerificationCode(UsuarioDTO usuario);
+
+    Usuario verifyCode(String email, String code);
+
+    void resetPassword(String email);
+
+    Usuario verifyPasswordKey(String key);
+
+    void renewPassword(String key, String password, String confirmPassword);
+
+    Usuario verifyAccountKey(String key);
 }

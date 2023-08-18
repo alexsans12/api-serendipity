@@ -15,6 +15,7 @@ import java.util.Map;
 
 import static com.serendipity.ecommerce.enumeration.RolType.*;
 import static com.serendipity.ecommerce.query.RolQuery.*;
+import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 
 @Repository
@@ -51,11 +52,11 @@ public class RolRepositoryImpl implements RolRepository<Rol> {
     public void addRolToUsuario(Long usuarioId, String rolNombre) {
         log.info("Agregando rol {} a usuario con ID: {}", rolNombre, usuarioId);
         try {
-            Rol rol = jdbcTemplate.queryForObject(SELECT_ROL_BY_NAME_QUERY, Map.of("rolNombre", rolNombre), new RolRowMapper());
-            jdbcTemplate.update(INSERT_ROL_TO_USUARIO_QUERY, Map.of("usuarioId", usuarioId, "rolId", requireNonNull(rol).getIdRol()));
+            Rol rol = jdbcTemplate.queryForObject(SELECT_ROL_BY_NAME_QUERY, of("nombre", rolNombre), new RolRowMapper());
+            jdbcTemplate.update(INSERT_ROL_TO_USUARIO_QUERY, of("usuarioId", usuarioId, "rolId", requireNonNull(rol).getIdRol()));
 
         } catch (EmptyResultDataAccessException exception) {
-            throw new ApiException("No se encontró ningún rol por nombre: " + ROLE_USER.name());
+            throw new ApiException("No se encontró ningún rol por nombre: " + ROL_USUARIO.name());
         } catch (Exception exception) {
             throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
         }
@@ -63,7 +64,14 @@ public class RolRepositoryImpl implements RolRepository<Rol> {
 
     @Override
     public Rol getRolByUsuarioId(Long usuarioId) {
-        return null;
+        log.info("Agregando rol por usuario ID: {}", usuarioId);
+        try {
+            return jdbcTemplate.queryForObject(SELECT_ROL_BY_ID_QUERY, of("id_usuario", usuarioId), new RolRowMapper());
+        } catch (EmptyResultDataAccessException exception) {
+            throw new ApiException("No se encontró ningún rol por nombre: " + ROL_USUARIO.name());
+        } catch (Exception exception) {
+            throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+        }
     }
 
     @Override
