@@ -2,6 +2,8 @@ package com.serendipity.ecommerce.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Setter
 @Getter
 @AllArgsConstructor
@@ -15,9 +17,9 @@ public class UsuarioDTO {
     private String email;
     private String telefono;
     private Long creadoPor;
-    private String fechaCreacion;
+    private LocalDateTime fechaCreacion;
     private Long modificadoPor;
-    private String fechaModificacion;
+    private LocalDateTime fechaModificacion;
     private boolean utilizaMfa;
     private boolean estado;
     private String rol;

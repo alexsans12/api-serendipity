@@ -53,6 +53,6 @@ public class UsuarioPrincipal implements UserDetails {
     }
 
     public UsuarioDTO getUsuario() {
-        return fromUsuario(this.usuario);
+        return fromUsuario(this.usuario, this.rol);
     }
 }

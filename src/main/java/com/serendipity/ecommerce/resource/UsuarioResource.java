@@ -22,6 +22,8 @@ import java.net.URI;
 
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
 import static com.serendipity.ecommerce.utils.ExceptionUtils.processError;
+import static com.serendipity.ecommerce.utils.UsuarioUtils.getAuthenticatedUsuario;
+import static com.serendipity.ecommerce.utils.UsuarioUtils.getLoggedInUsuario;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
@@ -45,7 +47,7 @@ public class UsuarioResource {
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm) {
         Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
-        UsuarioDTO usuario = getAuthenticatedUsuario(authentication);
+        UsuarioDTO usuario = getLoggedInUsuario(authentication);
         return usuario.isUtilizaMfa() ? sendVerificationCode(usuario) : sendResponse(usuario);
     }
 
@@ -64,7 +66,7 @@ public class UsuarioResource {
 
     @GetMapping("/profile")
     public ResponseEntity<HttpResponse> profile(Authentication authentication) {
-        UsuarioDTO usuario = usuarioService.getUsuarioByEmail(((UsuarioDTO) authentication.getPrincipal()).getEmail());
+        UsuarioDTO usuario = usuarioService.getUsuarioByEmail(getAuthenticatedUsuario(authentication).getEmail());
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
@@ -195,16 +197,12 @@ public class UsuarioResource {
                         .build(), NOT_FOUND);
     }*/
 
-    private UsuarioDTO getAuthenticatedUsuario(Authentication authentication) {
-        return ((UsuarioPrincipal) authentication.getPrincipal()).getUsuario();
-    }
-
     private Authentication authenticate(String email, String password) {
         try {
             Authentication authentication = authenticationManager.authenticate(unauthenticated(email, password));
             return authentication;
         } catch (Exception exception) {
-            processError(request, response, exception);
+            //processError(request, response, exception);
             throw new ApiException(exception.getMessage());
         }
     }
