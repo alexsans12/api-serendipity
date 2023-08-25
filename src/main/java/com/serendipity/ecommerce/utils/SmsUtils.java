@@ -10,11 +10,11 @@ import static com.twilio.rest.api.v2010.account.Message.creator;
 
 public class SmsUtils {
     @Value("${twilio.phone-number}")
-    public static String FROM_NUMBER = "+14157020957";
+    public static String FROM_NUMBER;
     @Value("${twilio.account-sid}")
-    public static String ACCOUNT_SID = "AC0ffc9a251c4834f23f306010ed905522";
+    public static String ACCOUNT_SID;
     @Value("${twilio.auth-token}")
-    public static String AUTH_TOKEN = "07141543c643471dfb052a4adfa474bd";
+    public static String AUTH_TOKEN;
 
     public static void sendSMS(String to, String messageBody) {
         System.out.println(FROM_NUMBER);
