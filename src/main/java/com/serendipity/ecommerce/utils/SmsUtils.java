@@ -17,9 +17,6 @@ public class SmsUtils {
     public static String AUTH_TOKEN;
 
     public static void sendSMS(String to, String messageBody) {
-        System.out.println(FROM_NUMBER);
-        System.out.println(ACCOUNT_SID);
-        System.out.println(AUTH_TOKEN);
         Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
         Message message = creator(new PhoneNumber("+502" + to), new PhoneNumber(FROM_NUMBER), messageBody).create();
         System.out.println(message);

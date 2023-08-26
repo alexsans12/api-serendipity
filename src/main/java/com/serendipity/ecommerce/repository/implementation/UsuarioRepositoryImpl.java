@@ -6,6 +6,7 @@ import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.enumeration.VerificationType;
 import com.serendipity.ecommerce.exception.ApiException;
+import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.repository.RolRepository;
 import com.serendipity.ecommerce.repository.UsuarioRepository;
 import com.serendipity.ecommerce.rowmapper.UsuarioRowMapper;
@@ -84,7 +85,16 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
 
     @Override
     public Usuario getById(Long id) {
-        return null;
+        try {
+            return jdbcTemplate.queryForObject(SELECT_USUARIO_BY_ID_QUERY, of("id", id), new UsuarioRowMapper());
+        } catch (EmptyResultDataAccessException exception) {
+            // If any error, throw an exception with proper message
+            throw new ApiException("Usuario no encontrado por id: " + id);
+        } catch (Exception exception) {
+            // If any error, throw an exception with proper message
+            log.error(exception.getMessage());
+            throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+        }
     }
 
     @Override
@@ -220,6 +230,17 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         }
     }
 
+    @Override
+    public Usuario updateUsuarioDetails(UpdateProfileForm usuario) {
+        try {
+            jdbcTemplate.update(UPDATE_USUARIO_DETAILS_QUERY, getUsuarioDetailsSqlParameterSource(usuario));
+            return getById(usuario.getIdUsuario());
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+        }
+    }
+
     private Boolean isLinkExpired(String key, VerificationType password) {
         try {
             return jdbcTemplate.queryForObject(SELECT_EXPIRATION_BY_URL_QUERY, of("url", getVerificationUrl(key, password.getType())), Boolean.class);
@@ -253,6 +274,16 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
                 .addValue("password", encoder.encode(usuario.getPassword()))
                 .addValue("utiliza_mfa", usuario.isUtilizaMfa())
                 .addValue("estado", usuario.isEstado());
+    }
+
+    private SqlParameterSource getUsuarioDetailsSqlParameterSource(UpdateProfileForm usuario) {
+        return new MapSqlParameterSource()
+                .addValue("id_usuario", usuario.getIdUsuario())
+                .addValue("nombre", usuario.getNombre())
+                .addValue("apellido", usuario.getApellido())
+                .addValue("email", usuario.getEmail().trim().toLowerCase())
+                .addValue("telefono", usuario.getTelefono())
+                .addValue("modificado_por", usuario.getModificadoPor());
     }
 
     private String getVerificationUrl(String token, String type) {

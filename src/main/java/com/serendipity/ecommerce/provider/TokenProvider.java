@@ -19,19 +19,22 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
 import static java.lang.System.currentTimeMillis;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
+import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
 
 @Component
 @RequiredArgsConstructor
 public class TokenProvider {
-    private static final String GET_ARRAYS_LLC = "GET_ARRAYS_LLC";
+    private static final String SERENDIPITY_LLC = "SERENDIPITY_LLC";
     private static final String CUSTOMER_MANAGEMENT_SERVICE = "CUSTOMER_MANAGEMENT_SERVICE";
     private static final String AUTHORITIES = "authorities";
     private static final long ACCESS_TOKEN_EXPIRATION_TIME = 1_800_000; // 30 minutes
@@ -42,24 +45,24 @@ public class TokenProvider {
     private final UsuarioService usuarioService;
 
     public String createAccessToken(UsuarioPrincipal usuarioPrincipal) {
-        return JWT.create().withIssuer(GET_ARRAYS_LLC).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
-                .withIssuedAt(new Date()).withSubject(usuarioPrincipal.getUsername())
+        return JWT.create().withIssuer(SERENDIPITY_LLC).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
+                .withIssuedAt(new Date()).withSubject(String.valueOf(usuarioPrincipal.getUsuario().getIdUsuario()))
                 .withArrayClaim(AUTHORITIES, getClaimsFromUsuario(usuarioPrincipal))
                 .withExpiresAt(new Date(currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
-                .sign(HMAC512(secret.getBytes()));
+                .sign(HMAC512(secret.getBytes(UTF_8)));
     }
 
     public String createRefreshToken(UsuarioPrincipal usuarioPrincipal) {
         String[] claims = getClaimsFromUsuario(usuarioPrincipal);
-        return JWT.create().withIssuer(GET_ARRAYS_LLC).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
-                .withIssuedAt(new Date()).withSubject(usuarioPrincipal.getUsername())
+        return JWT.create().withIssuer(SERENDIPITY_LLC).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
+                .withIssuedAt(new Date()).withSubject(String.valueOf(usuarioPrincipal.getUsuario().getIdUsuario()))
                 .withExpiresAt(new Date(currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
-                .sign(HMAC512(secret.getBytes()));
+                .sign(HMAC512(secret.getBytes(UTF_8)));
     }
 
-    public String getSubject(String token, HttpServletRequest request) {
+    public Long getSubject(String token, HttpServletRequest request) {
         try {
-            return getJWTVerifier().verify(token).getSubject();
+            return Long.valueOf(getJWTVerifier().verify(token).getSubject());
         } catch (TokenExpiredException exception) {
             request.setAttribute("expiredMessage", exception.getMessage());
             throw exception;
@@ -76,15 +79,15 @@ public class TokenProvider {
         return stream(claims).map(SimpleGrantedAuthority::new).collect(toList());
     }
 
-    public Authentication getAuthentication(String email, List<GrantedAuthority> authorities, HttpServletRequest request) {
-        UsernamePasswordAuthenticationToken userPasswordAuthToken = new UsernamePasswordAuthenticationToken(usuarioService.getUsuarioByEmail(email), null, authorities);
+    public Authentication getAuthentication(Long idUsuario, List<GrantedAuthority> authorities, HttpServletRequest request) {
+        UsernamePasswordAuthenticationToken userPasswordAuthToken = new UsernamePasswordAuthenticationToken(usuarioService.getUsuarioById(idUsuario), null, authorities);
         userPasswordAuthToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         return userPasswordAuthToken;
     }
 
-    public boolean isTokenValid(String email, String token) {
+    public boolean isTokenValid(Long idUsuario, String token) {
         JWTVerifier verifier = getJWTVerifier();
-        return StringUtils.isNotEmpty(email) && !isTokenExpired(verifier, token);
+        return !isNull(idUsuario) && !isTokenExpired(verifier, token);
     }
 
     private boolean isTokenExpired(JWTVerifier verifier, String token) {
@@ -104,7 +107,7 @@ public class TokenProvider {
         JWTVerifier verifier;
         try {
             Algorithm algorithm = HMAC512(secret);
-            verifier = JWT.require(algorithm).withIssuer(GET_ARRAYS_LLC).build();
+            verifier = JWT.require(algorithm).withIssuer(SERENDIPITY_LLC).build();
         } catch (JWTVerificationException e) {
             throw new JWTVerificationException(TOKEN_CANNOT_BE_VERIFIED);
         }

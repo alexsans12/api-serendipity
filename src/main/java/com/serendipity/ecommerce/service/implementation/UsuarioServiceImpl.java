@@ -3,6 +3,7 @@ package com.serendipity.ecommerce.service.implementation;
 import com.serendipity.ecommerce.domain.Rol;
 import com.serendipity.ecommerce.domain.Usuario;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
+import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.repository.RolRepository;
 import com.serendipity.ecommerce.repository.UsuarioRepository;
 import com.serendipity.ecommerce.service.UsuarioService;
@@ -16,6 +17,12 @@ import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.fromUsuario;
 public class UsuarioServiceImpl implements UsuarioService {
     private final UsuarioRepository<Usuario> usuarioRepository;
     private final RolRepository<Rol> rolRepository;
+
+    @Override
+    public UsuarioDTO getUsuarioById(Long id) {
+        return mapToUsuarioDTO(usuarioRepository.getById(id));
+    }
+
     @Override
     public UsuarioDTO createUsuario(Usuario usuario) {
         return mapToUsuarioDTO(usuarioRepository.create(usuario));
@@ -54,6 +61,11 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public UsuarioDTO verifyAccountKey(String key) {
         return mapToUsuarioDTO(usuarioRepository.verifyAccountKey(key));
+    }
+
+    @Override
+    public UsuarioDTO updateUsuarioDetails(UpdateProfileForm usuario) {
+        return mapToUsuarioDTO(usuarioRepository.updateUsuarioDetails(usuario));
     }
 
     private UsuarioDTO mapToUsuarioDTO(Usuario usuario) {

@@ -6,6 +6,7 @@ import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.form.LoginForm;
+import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.provider.TokenProvider;
 import com.serendipity.ecommerce.service.RolService;
 import com.serendipity.ecommerce.service.UsuarioService;
@@ -72,6 +73,20 @@ public class UsuarioResource {
                         .timestamp(now().toString())
                         .data(of("usuario", usuario))
                         .message("Perfil de usuario obtenido exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/update/profile")
+    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateProfileForm usuario, Authentication authentication) {
+        usuario.setModificadoPor(getAuthenticatedUsuario(authentication).getIdUsuario());
+        UsuarioDTO updateUsuario = usuarioService.updateUsuarioDetails(usuario);
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timestamp(now().toString())
+                        .data(of("usuario", updateUsuario))
+                        .message("Perfil de usuario actualizado exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
                         .build());
@@ -146,7 +161,7 @@ public class UsuarioResource {
     public ResponseEntity<HttpResponse> refreshToken(HttpServletRequest request) {
         if (isHeaderTokenValid(request)) {
             String token = request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length());
-            UsuarioDTO usuario = usuarioService.getUsuarioByEmail(tokenProvider.getSubject(token, request));
+            UsuarioDTO usuario = usuarioService.getUsuarioById(tokenProvider.getSubject(token, request));
             return ResponseEntity.ok().body(
                     HttpResponse.builder()
                             .timestamp(now().toString())

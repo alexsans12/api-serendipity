@@ -2,6 +2,7 @@ package com.serendipity.ecommerce.repository;
 
 import com.serendipity.ecommerce.domain.Usuario;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
+import com.serendipity.ecommerce.form.UpdateProfileForm;
 
 import java.util.Collection;
 
@@ -22,9 +23,10 @@ public interface UsuarioRepository<T extends Usuario> {
 
     void resetPassword(String email);
 
-    Usuario verifyPasswordKey(String key);
+    T verifyPasswordKey(String key);
 
     void renewPassword(String key, String password, String confirmPassword);
 
-    Usuario verifyAccountKey(String key);
+    T verifyAccountKey(String key);
+    T updateUsuarioDetails(UpdateProfileForm usuario);
 }
