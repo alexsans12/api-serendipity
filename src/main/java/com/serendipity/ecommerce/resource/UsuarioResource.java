@@ -6,6 +6,7 @@ import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.form.LoginForm;
+import com.serendipity.ecommerce.form.UpdatePasswordForm;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.provider.TokenProvider;
 import com.serendipity.ecommerce.service.RolService;
@@ -79,7 +80,8 @@ public class UsuarioResource {
     }
 
     @PatchMapping("/update/profile")
-    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateProfileForm usuario, Authentication authentication) {
+    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateProfileForm usuario, Authentication authentication) throws InterruptedException {
+        Thread.sleep(3000);
         usuario.setModificadoPor(getAuthenticatedUsuario(authentication).getIdUsuario());
         UsuarioDTO updateUsuario = usuarioService.updateUsuarioDetails(usuario);
         return ResponseEntity.ok().body(
@@ -152,6 +154,20 @@ public class UsuarioResource {
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .message(usuarioService.verifyAccountKey(key).isEstado() ? "La cuenta ya ha sido verificada." : "La cuenta ha sido verificada.")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/update/password")
+    public ResponseEntity<HttpResponse> updatePassword(Authentication authentication, @RequestBody @Valid UpdatePasswordForm form) {
+        UsuarioDTO usuario = getAuthenticatedUsuario(authentication);
+        System.out.println(form.getCurrentPassword() + " " + form.getNewPassword() + " " + form.getConfirmNewPassword());
+        usuarioService.updatePassword(usuario.getIdUsuario(), form.getCurrentPassword(), form.getNewPassword(), form.getConfirmNewPassword());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timestamp(now().toString())
+                        .message("Password actualizado exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
                         .build());

@@ -68,6 +68,11 @@ public class UsuarioServiceImpl implements UsuarioService {
         return mapToUsuarioDTO(usuarioRepository.updateUsuarioDetails(usuario));
     }
 
+    @Override
+    public void updatePassword(Long idUsuario, String currentPassword, String newPassword, String confirmNewPassword) {
+        usuarioRepository.updatePassword(idUsuario, currentPassword, newPassword, confirmNewPassword);
+    }
+
     private UsuarioDTO mapToUsuarioDTO(Usuario usuario) {
         return fromUsuario(usuario, rolRepository.getRolByUsuarioId(usuario.getIdUsuario()));
     }
