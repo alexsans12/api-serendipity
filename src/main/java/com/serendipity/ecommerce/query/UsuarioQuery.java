@@ -17,6 +17,7 @@ public class UsuarioQuery {
     public static final String UPDATE_USUARIO_PASSWORD_BY_URL_QUERY = "UPDATE usuario SET password = :password WHERE id_usuario = (SELECT id_usuario FROM restablecer_password WHERE url = :url)";
     public static final String UPDATE_USUARIO_ENABLED_QUERY = "UPDATE usuario SET estado = :enabled WHERE id_usuario = :id_usuario";
     public static final String UPDATE_USUARIO_DETAILS_QUERY = "UPDATE usuario SET nombre = :nombre, apellido = :apellido, email = :email, telefono = :telefono, modificado_por = :modificado_por WHERE id_usuario = :id_usuario";
+    public static final String UPDATE_USUARIO_PASSWORD_BY_ID_QUERY = "UPDATE usuario SET password = :password WHERE id_usuario = :id_usuario";
     public static final String DELETE_VERIFICATION_BY_URL_QUERY = "DELETE FROM restablecer_password WHERE url = :url";
     public static final String DELETE_VERIFICATION_BY_USUARIO_ID = "DELETE FROM verificacion_two_factors WHERE id_usuario = :id";
     public static final String DELETE_CODE = "DELETE FROM verificacion_two_factors WHERE codigo = :code";

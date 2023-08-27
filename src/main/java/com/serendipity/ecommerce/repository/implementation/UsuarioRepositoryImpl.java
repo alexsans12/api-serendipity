@@ -241,6 +241,22 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         }
     }
 
+    @Override
+    public void updatePassword(Long idUsuario, String currentPassword, String newPassword, String confirmNewPassword) {
+        if (!newPassword.equals(confirmNewPassword)) throw new ApiException("Las contraseñas no coinciden. Por favor, inténtelo de nuevo.");
+
+        Usuario usuario = getById(idUsuario);
+        if (encoder.matches(currentPassword, usuario.getPassword())) {
+            try {
+                jdbcTemplate.update(UPDATE_USUARIO_PASSWORD_BY_ID_QUERY, of("password", encoder.encode(newPassword), "id_usuario", idUsuario));
+            } catch (Exception exception) {
+                throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+            }
+        } else {
+            throw new ApiException("La contraseña actual no es correcta. Por favor, inténtelo de nuevo.");
+        }
+    }
+
     private Boolean isLinkExpired(String key, VerificationType password) {
         try {
             return jdbcTemplate.queryForObject(SELECT_EXPIRATION_BY_URL_QUERY, of("url", getVerificationUrl(key, password.getType())), Boolean.class);

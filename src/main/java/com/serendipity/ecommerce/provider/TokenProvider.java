@@ -37,7 +37,7 @@ public class TokenProvider {
     private static final String SERENDIPITY_LLC = "SERENDIPITY_LLC";
     private static final String CUSTOMER_MANAGEMENT_SERVICE = "CUSTOMER_MANAGEMENT_SERVICE";
     private static final String AUTHORITIES = "authorities";
-    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 1_800_000; // 30 minutes
+    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 432_000_000; //1_800_000; // 30 minutes
     private static final long REFRESH_TOKEN_EXPIRATION_TIME = 432_000_000; // 5 days
     public static final String TOKEN_CANNOT_BE_VERIFIED = "Token no puede ser verificado";
     @Value("${jwt.secret}")
