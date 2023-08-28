@@ -33,4 +33,6 @@ public interface UsuarioRepository<T extends Usuario> {
     void updatePassword(Long idUsuario, String currentPassword, String newPassword, String confirmNewPassword);
 
     void updateRolUsuario(Long idUsuario, String rol);
+
+    void updateAccountSettings(Long idUsuario, Boolean enabled);
 }

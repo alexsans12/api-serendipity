@@ -78,6 +78,11 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuarioRepository.updateRolUsuario(idUsuario, rol);
     }
 
+    @Override
+    public void updateAccountSettings(Long idUsuario, Boolean enabled) {
+        usuarioRepository.updateAccountSettings(idUsuario, enabled);
+    }
+
     private UsuarioDTO mapToUsuarioDTO(Usuario usuario) {
         return fromUsuario(usuario, rolRepository.getRolByUsuarioId(usuario.getIdUsuario()));
     }

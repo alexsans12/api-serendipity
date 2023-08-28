@@ -25,4 +25,6 @@ public interface UsuarioService {
     void updatePassword(Long idUsuario, String currentPassword, String newPassword, String confirmNewPassword);
 
     void updateRolUsuario(Long idUsuario, String rol);
+
+    void updateAccountSettings(Long idUsuario, Boolean enabled);
 }

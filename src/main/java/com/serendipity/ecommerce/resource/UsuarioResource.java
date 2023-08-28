@@ -6,6 +6,7 @@ import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.form.LoginForm;
+import com.serendipity.ecommerce.form.SettingsForm;
 import com.serendipity.ecommerce.form.UpdatePasswordForm;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.provider.TokenProvider;
@@ -181,6 +182,20 @@ public class UsuarioResource {
                         .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
                         .timestamp(now().toString())
                         .message("Rol de usuario actualizado exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/update/settings")
+    public ResponseEntity<HttpResponse> updateAccount(Authentication authentication, @RequestBody @Valid SettingsForm form) {
+        UsuarioDTO usuarioDTO = getAuthenticatedUsuario(authentication);
+        usuarioService.updateAccountSettings(usuarioDTO.getIdUsuario(), form.getEnabled());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .timestamp(now().toString())
+                        .message("Configuración de cuenta actualizada exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
                         .build());

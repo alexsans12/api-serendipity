@@ -273,6 +273,15 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         }
     }
 
+    @Override
+    public void updateAccountSettings(Long idUsuario, Boolean enabled) {
+        try {
+            jdbcTemplate.update(UPDATE_USUARIO_ENABLED_QUERY, of("enabled", enabled, "id_usuario", idUsuario));
+        } catch (Exception exception) {
+            throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+        }
+    }
+
     private Boolean isLinkExpired(String key, VerificationType password) {
         try {
             return jdbcTemplate.queryForObject(SELECT_EXPIRATION_BY_URL_QUERY, of("url", getVerificationUrl(key, password.getType())), Boolean.class);
