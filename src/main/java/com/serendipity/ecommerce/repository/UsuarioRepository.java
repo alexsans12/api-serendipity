@@ -31,4 +31,6 @@ public interface UsuarioRepository<T extends Usuario> {
     T updateUsuarioDetails(UpdateProfileForm usuario);
 
     void updatePassword(Long idUsuario, String currentPassword, String newPassword, String confirmNewPassword);
+
+    void updateRolUsuario(Long idUsuario, String rol);
 }

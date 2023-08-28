@@ -72,7 +72,7 @@ public class UsuarioResource {
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", usuario))
+                        .data(of("usuario", usuario, "roles", rolService.getRoles()))
                         .message("Perfil de usuario obtenido exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -162,12 +162,25 @@ public class UsuarioResource {
     @PatchMapping("/update/password")
     public ResponseEntity<HttpResponse> updatePassword(Authentication authentication, @RequestBody @Valid UpdatePasswordForm form) {
         UsuarioDTO usuario = getAuthenticatedUsuario(authentication);
-        System.out.println(form.getCurrentPassword() + " " + form.getNewPassword() + " " + form.getConfirmNewPassword());
         usuarioService.updatePassword(usuario.getIdUsuario(), form.getCurrentPassword(), form.getNewPassword(), form.getConfirmNewPassword());
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .message("Password actualizado exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/update/rol/{rol}")
+    public ResponseEntity<HttpResponse> updateRolUsuario(Authentication authentication, @PathVariable("rol") String rol) {
+        UsuarioDTO usuarioDTO = getAuthenticatedUsuario(authentication);
+        usuarioService.updateRolUsuario(usuarioDTO.getIdUsuario(), rol);
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .timestamp(now().toString())
+                        .message("Rol de usuario actualizado exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
                         .build());

@@ -9,6 +9,7 @@ import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.repository.RolRepository;
 import com.serendipity.ecommerce.repository.UsuarioRepository;
+import com.serendipity.ecommerce.rowmapper.RolRowMapper;
 import com.serendipity.ecommerce.rowmapper.UsuarioRowMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,8 @@ import java.util.UUID;
 
 import static com.serendipity.ecommerce.enumeration.RolType.ROL_USUARIO;
 import static com.serendipity.ecommerce.enumeration.VerificationType.*;
+import static com.serendipity.ecommerce.query.RolQuery.SELECT_ROL_BY_NAME_QUERY;
+import static com.serendipity.ecommerce.query.RolQuery.UPDATE_ROL_TO_USUARIO_QUERY;
 import static com.serendipity.ecommerce.query.UsuarioQuery.*;
 import static com.serendipity.ecommerce.utils.SmsUtils.sendSMS;
 import static java.time.LocalDateTime.now;
@@ -157,7 +160,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         try {
             Usuario usuarioByCode = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_USUARIO_CODE_QUERY, of("code", code), new UsuarioRowMapper());
             Usuario usuarioByEmail = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_EMAIL_QUERY, of("email", email), new UsuarioRowMapper());
-            if(usuarioByCode.getEmail().equalsIgnoreCase(usuarioByEmail.getEmail())) {
+            if(requireNonNull(usuarioByCode).getEmail().equalsIgnoreCase(requireNonNull(usuarioByEmail).getEmail())) {
                 jdbcTemplate.update(DELETE_CODE, of("code", code));
                 return usuarioByCode;
             } else {
@@ -220,7 +223,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     public Usuario verifyAccountKey(String key) {
         try {
             Usuario usuario = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_ACCOUNT_URL_QUERY, of("url", getVerificationUrl(key, ACCOUNT.getType())), new UsuarioRowMapper());
-            jdbcTemplate.update(UPDATE_USUARIO_ENABLED_QUERY, of("enabled", true, "id_usuario", usuario.getIdUsuario()));
+            jdbcTemplate.update(UPDATE_USUARIO_ENABLED_QUERY, of("enabled", true, "id_usuario", requireNonNull(usuario).getIdUsuario()));
             // Delete after update - depends on your requirements
             return usuario;
         } catch (EmptyResultDataAccessException exception) {
@@ -254,6 +257,19 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
             }
         } else {
             throw new ApiException("La contraseña actual no es correcta. Por favor, inténtelo de nuevo.");
+        }
+    }
+
+    @Override
+    public void updateRolUsuario(Long idUsuario, String rol) {
+        try {
+            Rol rolSelected = jdbcTemplate.queryForObject(SELECT_ROL_BY_NAME_QUERY, of("nombre", rol), new RolRowMapper());
+            jdbcTemplate.update(UPDATE_ROL_TO_USUARIO_QUERY, of("usuarioId", idUsuario, "rolId", requireNonNull(rolSelected).getIdRol()));
+
+        } catch (EmptyResultDataAccessException exception) {
+            throw new ApiException("No se encontró ningún rol por nombre: " + rol);
+        } catch (Exception exception) {
+            throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
         }
     }
 

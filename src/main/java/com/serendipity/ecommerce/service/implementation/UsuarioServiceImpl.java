@@ -73,6 +73,11 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuarioRepository.updatePassword(idUsuario, currentPassword, newPassword, confirmNewPassword);
     }
 
+    @Override
+    public void updateRolUsuario(Long idUsuario, String rol) {
+        usuarioRepository.updateRolUsuario(idUsuario, rol);
+    }
+
     private UsuarioDTO mapToUsuarioDTO(Usuario usuario) {
         return fromUsuario(usuario, rolRepository.getRolByUsuarioId(usuario.getIdUsuario()));
     }
