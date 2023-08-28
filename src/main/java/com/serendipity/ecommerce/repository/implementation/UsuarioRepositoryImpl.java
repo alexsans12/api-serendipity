@@ -24,8 +24,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -37,6 +42,7 @@ import static com.serendipity.ecommerce.query.RolQuery.SELECT_ROL_BY_NAME_QUERY;
 import static com.serendipity.ecommerce.query.RolQuery.UPDATE_ROL_TO_USUARIO_QUERY;
 import static com.serendipity.ecommerce.query.UsuarioQuery.*;
 import static com.serendipity.ecommerce.utils.SmsUtils.sendSMS;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
@@ -44,6 +50,7 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.time.DateFormatUtils.format;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
+import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
 
 @Repository
 @RequiredArgsConstructor
@@ -296,6 +303,41 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         }
     }
 
+    @Override
+    public void updateImage(UsuarioDTO usuarioDTO, MultipartFile image) {
+        String urlFoto = setImageUrl(usuarioDTO.getEmail());
+        usuarioDTO.setUrlFoto(urlFoto);
+        saveImage(usuarioDTO.getEmail(), image);
+        jdbcTemplate.update(UPDATE_USUARIO_IMAGE_QUERY, of("url_foto", urlFoto, "id_usuario", usuarioDTO.getIdUsuario()));
+    }
+
+    private void saveImage(String email, MultipartFile image) {
+        Path fileStorageLocation = Paths.get(System.getProperty("user.home")+"/Downloads/images/").toAbsolutePath().normalize();
+        if(!Files.exists(fileStorageLocation)) {
+            try {
+                Files.createDirectories(fileStorageLocation);
+            } catch (Exception exception) {
+                log.error(exception.getMessage());
+                throw new ApiException("No se pudo crear el directorio donde se almacenarán los archivos subidos.");
+            }
+            log.info("Directorio creado con éxito, {}", fileStorageLocation);
+        }
+
+        try {
+            Files.copy(image.getInputStream(), fileStorageLocation.resolve(email + ".png"), REPLACE_EXISTING);
+        } catch (IOException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException(exception.getMessage());
+        }
+        log.info("Imagen guardada con éxito, {}", fileStorageLocation);
+    }
+
+    private String setImageUrl(String email) {
+        return fromCurrentContextPath()
+                .path("/api/v1/usuario/image/" + email + ".png" )
+                .toUriString();
+    }
+
     private Boolean isLinkExpired(String key, VerificationType password) {
         try {
             return jdbcTemplate.queryForObject(SELECT_EXPIRATION_BY_URL_QUERY, of("url", getVerificationUrl(key, password.getType())), Boolean.class);
@@ -342,7 +384,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     }
 
     private String getVerificationUrl(String token, String type) {
-        return ServletUriComponentsBuilder.fromCurrentContextPath()
+        return fromCurrentContextPath()
                 .path("/api/v1/usuario/verify/" + type + "/" + token)
                 .toUriString();
     }

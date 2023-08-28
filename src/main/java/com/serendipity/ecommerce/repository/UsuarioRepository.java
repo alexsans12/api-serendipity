@@ -3,6 +3,7 @@ package com.serendipity.ecommerce.repository;
 import com.serendipity.ecommerce.domain.Usuario;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
 
@@ -37,4 +38,6 @@ public interface UsuarioRepository<T extends Usuario> {
     void updateAccountSettings(Long idUsuario, Boolean enabled);
 
     Usuario toggleMfa(String email);
+
+    void updateImage(UsuarioDTO usuarioDTO, MultipartFile image);
 }
