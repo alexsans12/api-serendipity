@@ -83,6 +83,11 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuarioRepository.updateAccountSettings(idUsuario, enabled);
     }
 
+    @Override
+    public UsuarioDTO toggleMfa(String email) {
+        return mapToUsuarioDTO(usuarioRepository.toggleMfa(email));
+    }
+
     private UsuarioDTO mapToUsuarioDTO(Usuario usuario) {
         return fromUsuario(usuario, rolRepository.getRolByUsuarioId(usuario.getIdUsuario()));
     }

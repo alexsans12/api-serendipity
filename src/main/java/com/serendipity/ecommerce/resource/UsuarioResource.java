@@ -22,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
 import static com.serendipity.ecommerce.utils.ExceptionUtils.processError;
@@ -196,6 +197,20 @@ public class UsuarioResource {
                         .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
                         .timestamp(now().toString())
                         .message("Configuración de cuenta actualizada exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/toggle/mfa")
+    public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) throws InterruptedException {
+        TimeUnit.SECONDS.sleep(3);
+        UsuarioDTO usuarioDTO = usuarioService.toggleMfa(getAuthenticatedUsuario(authentication).getEmail());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .timestamp(now().toString())
+                        .message("Autenticación de multifactores actualizada exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
                         .build());

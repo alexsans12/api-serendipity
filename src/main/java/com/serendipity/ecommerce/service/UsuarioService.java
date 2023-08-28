@@ -27,4 +27,6 @@ public interface UsuarioService {
     void updateRolUsuario(Long idUsuario, String rol);
 
     void updateAccountSettings(Long idUsuario, Boolean enabled);
+
+    UsuarioDTO toggleMfa(String email);
 }

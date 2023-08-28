@@ -35,4 +35,6 @@ public interface UsuarioRepository<T extends Usuario> {
     void updateRolUsuario(Long idUsuario, String rol);
 
     void updateAccountSettings(Long idUsuario, Boolean enabled);
+
+    Usuario toggleMfa(String email);
 }

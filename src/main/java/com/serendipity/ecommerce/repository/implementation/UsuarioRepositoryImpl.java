@@ -41,6 +41,7 @@ import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.time.DateFormatUtils.format;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
 
@@ -279,6 +280,19 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
             jdbcTemplate.update(UPDATE_USUARIO_ENABLED_QUERY, of("enabled", enabled, "id_usuario", idUsuario));
         } catch (Exception exception) {
             throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+        }
+    }
+
+    @Override
+    public Usuario toggleMfa(String email) {
+        try {
+            Usuario usuario = getUsuarioByEmail(email);
+            if(isBlank(usuario.getTelefono())) throw new ApiException("No se puede activar la autenticación de dos factores. Por favor, actualice su número de teléfono e inténtelo de nuevo.");
+            usuario.setUtilizaMfa(!usuario.isUtilizaMfa());
+            jdbcTemplate.update(UPDATE_USUARIO_MFA_QUERY, of("utiliza_mfa", usuario.isUtilizaMfa(), "email", usuario.getEmail()));
+            return usuario;
+        } catch (Exception exception) {
+            throw new ApiException("Un error inesperado ha ocurrido al intentar activar la autenticación de dos factores. Por favor, inténtelo de nuevo más tarde.");
         }
     }
 
