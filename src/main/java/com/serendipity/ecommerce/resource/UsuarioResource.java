@@ -6,6 +6,7 @@ import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.form.LoginForm;
+import com.serendipity.ecommerce.form.SettingsForm;
 import com.serendipity.ecommerce.form.UpdatePasswordForm;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.provider.TokenProvider;
@@ -19,8 +20,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
 import static com.serendipity.ecommerce.utils.ExceptionUtils.processError;
@@ -30,6 +36,8 @@ import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
+import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
 import static org.springframework.security.authentication.UsernamePasswordAuthenticationToken.unauthenticated;
 import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
 
@@ -72,7 +80,7 @@ public class UsuarioResource {
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", usuario))
+                        .data(of("usuario", usuario, "roles", rolService.getRoles()))
                         .message("Perfil de usuario obtenido exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -162,7 +170,6 @@ public class UsuarioResource {
     @PatchMapping("/update/password")
     public ResponseEntity<HttpResponse> updatePassword(Authentication authentication, @RequestBody @Valid UpdatePasswordForm form) {
         UsuarioDTO usuario = getAuthenticatedUsuario(authentication);
-        System.out.println(form.getCurrentPassword() + " " + form.getNewPassword() + " " + form.getConfirmNewPassword());
         usuarioService.updatePassword(usuario.getIdUsuario(), form.getCurrentPassword(), form.getNewPassword(), form.getConfirmNewPassword());
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
@@ -171,6 +178,71 @@ public class UsuarioResource {
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
                         .build());
+    }
+
+    @PatchMapping("/update/rol/{rol}")
+    public ResponseEntity<HttpResponse> updateRolUsuario(Authentication authentication, @PathVariable("rol") String rol) {
+        UsuarioDTO usuarioDTO = getAuthenticatedUsuario(authentication);
+        usuarioService.updateRolUsuario(usuarioDTO.getIdUsuario(), rol);
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .timestamp(now().toString())
+                        .message("Rol de usuario actualizado exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/update/settings")
+    public ResponseEntity<HttpResponse> updateAccount(Authentication authentication, @RequestBody @Valid SettingsForm form) {
+        UsuarioDTO usuarioDTO = getAuthenticatedUsuario(authentication);
+        usuarioService.updateAccountSettings(usuarioDTO.getIdUsuario(), form.getEnabled());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .timestamp(now().toString())
+                        .message("Configuración de cuenta actualizada exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/toggle/mfa")
+    public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) throws InterruptedException {
+        TimeUnit.SECONDS.sleep(3);
+        UsuarioDTO usuarioDTO = usuarioService.toggleMfa(getAuthenticatedUsuario(authentication).getEmail());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .timestamp(now().toString())
+                        .message("Autenticación de multifactores actualizada exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @PatchMapping("/update/image")
+    public ResponseEntity<HttpResponse> updateProfileImage(Authentication authentication, @RequestParam("image") MultipartFile image) {
+        UsuarioDTO usuarioDTO = getAuthenticatedUsuario(authentication);
+        usuarioService.updateImage(usuarioDTO, image);
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .timestamp(now().toString())
+                        .message("Imagen de perfil actualizada exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
+    public byte[] getProfileImage(@PathVariable("fileName") String fileName) {
+        try {
+            return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/" + fileName));
+        } catch (IOException e) {
+            throw new ApiException("Error al obtener la imagen del usuario " + fileName);
+        }
     }
 
     @GetMapping("/refresh/token")

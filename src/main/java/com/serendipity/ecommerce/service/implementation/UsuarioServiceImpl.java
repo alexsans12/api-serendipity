@@ -9,6 +9,7 @@ import com.serendipity.ecommerce.repository.UsuarioRepository;
 import com.serendipity.ecommerce.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.fromUsuario;
 
@@ -71,6 +72,26 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public void updatePassword(Long idUsuario, String currentPassword, String newPassword, String confirmNewPassword) {
         usuarioRepository.updatePassword(idUsuario, currentPassword, newPassword, confirmNewPassword);
+    }
+
+    @Override
+    public void updateRolUsuario(Long idUsuario, String rol) {
+        usuarioRepository.updateRolUsuario(idUsuario, rol);
+    }
+
+    @Override
+    public void updateAccountSettings(Long idUsuario, Boolean enabled) {
+        usuarioRepository.updateAccountSettings(idUsuario, enabled);
+    }
+
+    @Override
+    public UsuarioDTO toggleMfa(String email) {
+        return mapToUsuarioDTO(usuarioRepository.toggleMfa(email));
+    }
+
+    @Override
+    public void updateImage(UsuarioDTO usuarioDTO, MultipartFile image) {
+        usuarioRepository.updateImage(usuarioDTO, image);
     }
 
     private UsuarioDTO mapToUsuarioDTO(Usuario usuario) {

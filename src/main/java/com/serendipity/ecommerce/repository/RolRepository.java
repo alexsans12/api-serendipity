@@ -9,7 +9,7 @@ public interface RolRepository<T extends Rol> {
     /* Basic CRUD operations */
     T create(T data);
 
-    Collection<T> findAll(int page, int pageSize);
+    Collection<Rol> findAll();
 
     T getById(Long id);
 

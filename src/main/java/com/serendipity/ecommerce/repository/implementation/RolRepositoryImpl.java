@@ -29,8 +29,12 @@ public class RolRepositoryImpl implements RolRepository<Rol> {
     }
 
     @Override
-    public Collection<Rol> findAll(int page, int pageSize) {
-        return null;
+    public Collection<Rol> findAll() {
+        try {
+            return jdbcTemplate.query(SELECT_ROLES_QUERY, new RolRowMapper());
+        } catch (Exception exception) {
+            throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+        }
     }
 
     @Override

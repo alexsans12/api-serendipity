@@ -9,6 +9,7 @@ import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.repository.RolRepository;
 import com.serendipity.ecommerce.repository.UsuarioRepository;
+import com.serendipity.ecommerce.rowmapper.RolRowMapper;
 import com.serendipity.ecommerce.rowmapper.UsuarioRowMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +24,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -32,14 +38,19 @@ import java.util.UUID;
 
 import static com.serendipity.ecommerce.enumeration.RolType.ROL_USUARIO;
 import static com.serendipity.ecommerce.enumeration.VerificationType.*;
+import static com.serendipity.ecommerce.query.RolQuery.SELECT_ROL_BY_NAME_QUERY;
+import static com.serendipity.ecommerce.query.RolQuery.UPDATE_ROL_TO_USUARIO_QUERY;
 import static com.serendipity.ecommerce.query.UsuarioQuery.*;
 import static com.serendipity.ecommerce.utils.SmsUtils.sendSMS;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.time.DateFormatUtils.format;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
+import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
 
 @Repository
 @RequiredArgsConstructor
@@ -157,7 +168,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         try {
             Usuario usuarioByCode = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_USUARIO_CODE_QUERY, of("code", code), new UsuarioRowMapper());
             Usuario usuarioByEmail = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_EMAIL_QUERY, of("email", email), new UsuarioRowMapper());
-            if(usuarioByCode.getEmail().equalsIgnoreCase(usuarioByEmail.getEmail())) {
+            if(requireNonNull(usuarioByCode).getEmail().equalsIgnoreCase(requireNonNull(usuarioByEmail).getEmail())) {
                 jdbcTemplate.update(DELETE_CODE, of("code", code));
                 return usuarioByCode;
             } else {
@@ -220,7 +231,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     public Usuario verifyAccountKey(String key) {
         try {
             Usuario usuario = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_ACCOUNT_URL_QUERY, of("url", getVerificationUrl(key, ACCOUNT.getType())), new UsuarioRowMapper());
-            jdbcTemplate.update(UPDATE_USUARIO_ENABLED_QUERY, of("enabled", true, "id_usuario", usuario.getIdUsuario()));
+            jdbcTemplate.update(UPDATE_USUARIO_ENABLED_QUERY, of("enabled", true, "id_usuario", requireNonNull(usuario).getIdUsuario()));
             // Delete after update - depends on your requirements
             return usuario;
         } catch (EmptyResultDataAccessException exception) {
@@ -255,6 +266,76 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         } else {
             throw new ApiException("La contraseña actual no es correcta. Por favor, inténtelo de nuevo.");
         }
+    }
+
+    @Override
+    public void updateRolUsuario(Long idUsuario, String rol) {
+        try {
+            Rol rolSelected = jdbcTemplate.queryForObject(SELECT_ROL_BY_NAME_QUERY, of("nombre", rol), new RolRowMapper());
+            jdbcTemplate.update(UPDATE_ROL_TO_USUARIO_QUERY, of("usuarioId", idUsuario, "rolId", requireNonNull(rolSelected).getIdRol()));
+
+        } catch (EmptyResultDataAccessException exception) {
+            throw new ApiException("No se encontró ningún rol por nombre: " + rol);
+        } catch (Exception exception) {
+            throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+        }
+    }
+
+    @Override
+    public void updateAccountSettings(Long idUsuario, Boolean enabled) {
+        try {
+            jdbcTemplate.update(UPDATE_USUARIO_ENABLED_QUERY, of("enabled", enabled, "id_usuario", idUsuario));
+        } catch (Exception exception) {
+            throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
+        }
+    }
+
+    @Override
+    public Usuario toggleMfa(String email) {
+        try {
+            Usuario usuario = getUsuarioByEmail(email);
+            if(isBlank(usuario.getTelefono())) throw new ApiException("No se puede activar la autenticación de dos factores. Por favor, actualice su número de teléfono e inténtelo de nuevo.");
+            usuario.setUtilizaMfa(!usuario.isUtilizaMfa());
+            jdbcTemplate.update(UPDATE_USUARIO_MFA_QUERY, of("utiliza_mfa", usuario.isUtilizaMfa(), "email", usuario.getEmail()));
+            return usuario;
+        } catch (Exception exception) {
+            throw new ApiException("Un error inesperado ha ocurrido al intentar activar la autenticación de dos factores. Por favor, inténtelo de nuevo más tarde.");
+        }
+    }
+
+    @Override
+    public void updateImage(UsuarioDTO usuarioDTO, MultipartFile image) {
+        String urlFoto = setImageUrl(usuarioDTO.getEmail());
+        usuarioDTO.setUrlFoto(urlFoto);
+        saveImage(usuarioDTO.getEmail(), image);
+        jdbcTemplate.update(UPDATE_USUARIO_IMAGE_QUERY, of("url_foto", urlFoto, "id_usuario", usuarioDTO.getIdUsuario()));
+    }
+
+    private void saveImage(String email, MultipartFile image) {
+        Path fileStorageLocation = Paths.get(System.getProperty("user.home")+"/Downloads/images/").toAbsolutePath().normalize();
+        if(!Files.exists(fileStorageLocation)) {
+            try {
+                Files.createDirectories(fileStorageLocation);
+            } catch (Exception exception) {
+                log.error(exception.getMessage());
+                throw new ApiException("No se pudo crear el directorio donde se almacenarán los archivos subidos.");
+            }
+            log.info("Directorio creado con éxito, {}", fileStorageLocation);
+        }
+
+        try {
+            Files.copy(image.getInputStream(), fileStorageLocation.resolve(email + ".png"), REPLACE_EXISTING);
+        } catch (IOException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException(exception.getMessage());
+        }
+        log.info("Imagen guardada con éxito, {}", fileStorageLocation);
+    }
+
+    private String setImageUrl(String email) {
+        return fromCurrentContextPath()
+                .path("/api/v1/usuario/image/" + email + ".png" )
+                .toUriString();
     }
 
     private Boolean isLinkExpired(String key, VerificationType password) {
@@ -303,7 +384,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     }
 
     private String getVerificationUrl(String token, String type) {
-        return ServletUriComponentsBuilder.fromCurrentContextPath()
+        return fromCurrentContextPath()
                 .path("/api/v1/usuario/verify/" + type + "/" + token)
                 .toUriString();
     }
