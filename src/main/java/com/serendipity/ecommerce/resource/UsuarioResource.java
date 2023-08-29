@@ -98,7 +98,7 @@ public class UsuarioResource {
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", updateUsuario))
+                        .data(of("usuario", updateUsuario, "eventos", eventoService.getEventsByUsuarioId(usuario.getIdUsuario()),"roles", rolService.getRoles()))
                         .message("Perfil de usuario actualizado exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
