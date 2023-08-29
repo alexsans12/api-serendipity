@@ -4,18 +4,21 @@ import com.serendipity.ecommerce.domain.HttpResponse;
 import com.serendipity.ecommerce.domain.Usuario;
 import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
+import com.serendipity.ecommerce.event.NewUsuarioEvento;
 import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.form.LoginForm;
 import com.serendipity.ecommerce.form.SettingsForm;
 import com.serendipity.ecommerce.form.UpdatePasswordForm;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
 import com.serendipity.ecommerce.provider.TokenProvider;
+import com.serendipity.ecommerce.service.EventoService;
 import com.serendipity.ecommerce.service.RolService;
 import com.serendipity.ecommerce.service.UsuarioService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -26,9 +29,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.concurrent.TimeUnit;
 
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
+import static com.serendipity.ecommerce.enumeration.EventoType.*;
 import static com.serendipity.ecommerce.utils.ExceptionUtils.processError;
 import static com.serendipity.ecommerce.utils.UsuarioUtils.getAuthenticatedUsuario;
 import static com.serendipity.ecommerce.utils.UsuarioUtils.getLoggedInUsuario;
@@ -36,7 +39,6 @@ import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
-import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
 import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
 import static org.springframework.security.authentication.UsernamePasswordAuthenticationToken.unauthenticated;
 import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
@@ -49,15 +51,16 @@ public class UsuarioResource {
 
     private final UsuarioService usuarioService;
     private final RolService rolService;
+    private final EventoService eventoService;
     private final AuthenticationManager authenticationManager;
     private final TokenProvider tokenProvider;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
+    private final ApplicationEventPublisher eventPublisher;
 
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm) {
-        Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
-        UsuarioDTO usuario = getLoggedInUsuario(authentication);
+        UsuarioDTO usuario = authenticate(loginForm.getEmail(), loginForm.getPassword());
         return usuario.isUtilizaMfa() ? sendVerificationCode(usuario) : sendResponse(usuario);
     }
 
@@ -80,7 +83,7 @@ public class UsuarioResource {
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", usuario, "roles", rolService.getRoles()))
+                        .data(of("usuario", usuario, "eventos", eventoService.getEventsByUsuarioId(usuario.getIdUsuario()),"roles", rolService.getRoles()))
                         .message("Perfil de usuario obtenido exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -88,10 +91,10 @@ public class UsuarioResource {
     }
 
     @PatchMapping("/update/profile")
-    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateProfileForm usuario, Authentication authentication) throws InterruptedException {
-        Thread.sleep(3000);
+    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateProfileForm usuario, Authentication authentication) {
         usuario.setModificadoPor(getAuthenticatedUsuario(authentication).getIdUsuario());
         UsuarioDTO updateUsuario = usuarioService.updateUsuarioDetails(usuario);
+        eventPublisher.publishEvent(new NewUsuarioEvento(ACTUALIZACION_PERFIL, usuario.getEmail()));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
@@ -105,6 +108,7 @@ public class UsuarioResource {
     @GetMapping("/verify/code/{email}/{code}")
     public ResponseEntity<HttpResponse> verifyCode(@PathVariable("email") String email, @PathVariable("code") String code) {
         UsuarioDTO usuario = usuarioService.verifyCode(email, code);
+        eventPublisher.publishEvent(new NewUsuarioEvento(EXITO_LOGIN, usuario.getEmail()));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
@@ -171,8 +175,10 @@ public class UsuarioResource {
     public ResponseEntity<HttpResponse> updatePassword(Authentication authentication, @RequestBody @Valid UpdatePasswordForm form) {
         UsuarioDTO usuario = getAuthenticatedUsuario(authentication);
         usuarioService.updatePassword(usuario.getIdUsuario(), form.getCurrentPassword(), form.getNewPassword(), form.getConfirmNewPassword());
+        eventPublisher.publishEvent(new NewUsuarioEvento(ACTUALIZACION_CONTRASENA, usuario.getEmail()));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
+                        .data(of("usuario", usuarioService.getUsuarioById(usuario.getIdUsuario()), "eventos", eventoService.getEventsByUsuarioId(usuario.getIdUsuario()), "roles", rolService.getRoles()))
                         .timestamp(now().toString())
                         .message("Password actualizado exitosamente")
                         .httpStatus(OK)
@@ -184,9 +190,10 @@ public class UsuarioResource {
     public ResponseEntity<HttpResponse> updateRolUsuario(Authentication authentication, @PathVariable("rol") String rol) {
         UsuarioDTO usuarioDTO = getAuthenticatedUsuario(authentication);
         usuarioService.updateRolUsuario(usuarioDTO.getIdUsuario(), rol);
+        eventPublisher.publishEvent(new NewUsuarioEvento(ACTUALIZACION_ROL, usuarioDTO.getEmail()));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "eventos", eventoService.getEventsByUsuarioId(usuarioDTO.getIdUsuario()),"roles", rolService.getRoles()))
                         .timestamp(now().toString())
                         .message("Rol de usuario actualizado exitosamente")
                         .httpStatus(OK)
@@ -198,9 +205,10 @@ public class UsuarioResource {
     public ResponseEntity<HttpResponse> updateAccount(Authentication authentication, @RequestBody @Valid SettingsForm form) {
         UsuarioDTO usuarioDTO = getAuthenticatedUsuario(authentication);
         usuarioService.updateAccountSettings(usuarioDTO.getIdUsuario(), form.getEnabled());
+        eventPublisher.publishEvent(new NewUsuarioEvento(ACTUALIZACION_CONFIGURACION_CUENTA, usuarioDTO.getEmail()));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "eventos", eventoService.getEventsByUsuarioId(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
                         .timestamp(now().toString())
                         .message("Configuración de cuenta actualizada exitosamente")
                         .httpStatus(OK)
@@ -209,12 +217,12 @@ public class UsuarioResource {
     }
 
     @PatchMapping("/toggle/mfa")
-    public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) throws InterruptedException {
-        TimeUnit.SECONDS.sleep(3);
+    public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) {
         UsuarioDTO usuarioDTO = usuarioService.toggleMfa(getAuthenticatedUsuario(authentication).getEmail());
+        eventPublisher.publishEvent(new NewUsuarioEvento(ACTUALIZACION_MFA, usuarioDTO.getEmail()));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "eventos", eventoService.getEventsByUsuarioId(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
                         .timestamp(now().toString())
                         .message("Autenticación de multifactores actualizada exitosamente")
                         .httpStatus(OK)
@@ -226,9 +234,10 @@ public class UsuarioResource {
     public ResponseEntity<HttpResponse> updateProfileImage(Authentication authentication, @RequestParam("image") MultipartFile image) {
         UsuarioDTO usuarioDTO = getAuthenticatedUsuario(authentication);
         usuarioService.updateImage(usuarioDTO, image);
+        eventPublisher.publishEvent(new NewUsuarioEvento(ACTUALIZACION_FOTO_PERFIL, usuarioDTO.getEmail()));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "eventos", eventoService.getEventsByUsuarioId(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
                         .timestamp(now().toString())
                         .message("Imagen de perfil actualizada exitosamente")
                         .httpStatus(OK)
@@ -300,12 +309,20 @@ public class UsuarioResource {
                         .build(), NOT_FOUND);
     }*/
 
-    private Authentication authenticate(String email, String password) {
+    private UsuarioDTO authenticate(String email, String password) {
         try {
+            if(null != usuarioService.getUsuarioByEmail(email))
+                eventPublisher.publishEvent(new NewUsuarioEvento(INTENTO_LOGIN, email));
+
             Authentication authentication = authenticationManager.authenticate(unauthenticated(email, password));
-            return authentication;
+            UsuarioDTO loggedInUsuario = getLoggedInUsuario(authentication);
+
+            if (!loggedInUsuario.isUtilizaMfa()) eventPublisher.publishEvent(new NewUsuarioEvento(EXITO_LOGIN, email));
+
+            return loggedInUsuario;
         } catch (Exception exception) {
-            //processError(request, response, exception);
+            eventPublisher.publishEvent(new NewUsuarioEvento(FALLO_LOGIN, email));
+            processError(request, response, exception);
             throw new ApiException(exception.getMessage());
         }
     }
