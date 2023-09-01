@@ -18,7 +18,7 @@ public interface UsuarioService {
 
     UsuarioDTO verifyPasswordKey(String key);
 
-    void renewPassword(String key, String password, String confirmPassword);
+    void updatePassword(Long idUsuario, String password, String confirmPassword);
 
     UsuarioDTO verifyAccountKey(String key);
     UsuarioDTO updateUsuarioDetails(UpdateProfileForm usuario);

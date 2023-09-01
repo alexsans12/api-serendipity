@@ -38,7 +38,8 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
             "/api/v1/usuario/register",
             "/api/v1/usuario/verify/code",
             "/api/v1/usuario/refresh/token",
-            "/api/v1/usuario/image"
+            "/api/v1/usuario/image",
+            "/api/v1/usuario/new/password",
     };
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filter) throws ServletException, IOException {

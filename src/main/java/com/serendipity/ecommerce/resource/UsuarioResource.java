@@ -6,10 +6,7 @@ import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.event.NewUsuarioEvento;
 import com.serendipity.ecommerce.exception.ApiException;
-import com.serendipity.ecommerce.form.LoginForm;
-import com.serendipity.ecommerce.form.SettingsForm;
-import com.serendipity.ecommerce.form.UpdatePasswordForm;
-import com.serendipity.ecommerce.form.UpdateProfileForm;
+import com.serendipity.ecommerce.form.*;
 import com.serendipity.ecommerce.provider.TokenProvider;
 import com.serendipity.ecommerce.service.EventoService;
 import com.serendipity.ecommerce.service.RolService;
@@ -120,7 +117,7 @@ public class UsuarioResource {
                         .build());
     }
 
-    // START - Restablecer contraseña cuando el usuario no está logueado
+    // INICIO - Reset Password cuando el usuario no esta logueado
     @GetMapping("/reset-password/{email}")
     public ResponseEntity<HttpResponse> resetPassword(@PathVariable("email") String email) {
         usuarioService.resetPassword(email);
@@ -140,15 +137,15 @@ public class UsuarioResource {
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("usuario", usuario))
-                        .message("Porfavor entra una nueva contraseña")
+                        .message("Porfavor ingresa una nueva contraseña")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
                         .build());
     }
 
-    @PostMapping("/reset-password/{key}/{password}/{confirmPassword}")
-    public ResponseEntity<HttpResponse> resetPasswordWithKey(@PathVariable("key") String key, @PathVariable("password") String password, @PathVariable("confirmPassword") String confirmPassword) {
-        usuarioService.renewPassword(key, password, confirmPassword);
+    @PutMapping("/new/password")
+    public ResponseEntity<HttpResponse> resetPasswordWithKey(@RequestBody @Valid NewPasswordForm form) {
+        usuarioService.updatePassword(form.getIdUsuario(), form.getPassword(), form.getConfirmPassword());
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
@@ -158,7 +155,7 @@ public class UsuarioResource {
                         .build());
     }
 
-    // END - Restablecer contraseña cuando el usuario no está logueado
+    // FIN - Reset Password cuando el usuario no esta logueado
 
     @GetMapping("/verify/account/{key}")
     public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key) {

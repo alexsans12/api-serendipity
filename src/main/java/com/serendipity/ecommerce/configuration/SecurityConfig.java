@@ -49,6 +49,7 @@ public class SecurityConfig {
             "/api/v1/usuario/verify/account/**",
             "/api/v1/usuario/refresh/token/**",
             "/api/v1/usuario/image/**",
+            "/api/v1/usuario/new/password/**",
     };
 
     @Bean

@@ -5,6 +5,7 @@ public class UsuarioQuery {
     public static final String SELECT_USUARIO_BY_EMAIL_QUERY = "SELECT * FROM usuario WHERE email = :email";
     public static final String SELECT_USUARIO_BY_USUARIO_CODE_QUERY = "SELECT * FROM usuario WHERE id_usuario = (SELECT id_usuario FROM verificacion_two_factors WHERE codigo = :code)";
     public static final String SELECT_EXPIRATION_BY_URL_QUERY = "SELECT fecha_expiracion < NOW() AS is_expired FROM restablecer_password WHERE url = :url";
+    public static final String SELECT_EXPIRATION_ACCOUNT_BY_URL_QUERY = "SELECT fecha_expiracion < NOW() AS is_expired FROM verificacion_cuenta WHERE url = :url";
     public static final String SELECT_USUARIO_BY_PASSWORD_URL_QUERY = "SELECT * FROM usuario WHERE id_usuario = (SELECT id_usuario FROM restablecer_password WHERE url = :url)";
     public static final String SELECT_CODE_EXPIRATION_QUERY = "SELECT fecha_expiracion < NOW() AS is_expired FROM verificacion_two_factors WHERE codigo = :code";
     public static final String SELECT_USUARIO_BY_ACCOUNT_URL_QUERY = "SELECT * FROM usuario WHERE id_usuario = (SELECT id_usuario FROM verificacion_cuenta WHERE url = :url)";
@@ -20,7 +21,9 @@ public class UsuarioQuery {
     public static final String UPDATE_USUARIO_PASSWORD_BY_ID_QUERY = "UPDATE usuario SET password = :password WHERE id_usuario = :id_usuario";
     public static final String UPDATE_USUARIO_MFA_QUERY = "UPDATE usuario SET utiliza_mfa = :utiliza_mfa WHERE email = :email";
     public static final String UPDATE_USUARIO_IMAGE_QUERY = "UPDATE usuario SET url_foto = :url_foto WHERE id_usuario = :id_usuario";
+    public static final String UPDATE_USUARIO_PASSWORD_BY_USUARIO_ID_QUERY = "UPDATE usuario SET password = :password WHERE id_usuario = :id_usuario";
     public static final String DELETE_VERIFICATION_BY_URL_QUERY = "DELETE FROM restablecer_password WHERE url = :url";
+    public static final String DELETE_ACCOUNT_VERIFICATION_BY_URL_QUERY = "DELETE FROM verificacion_cuenta WHERE url = :url";
     public static final String DELETE_VERIFICATION_BY_USUARIO_ID = "DELETE FROM verificacion_two_factors WHERE id_usuario = :id";
     public static final String DELETE_CODE = "DELETE FROM verificacion_two_factors WHERE codigo = :code";
     public static final String DELETE_PASSWORD_VERIFICATION_BY_USUARIO_ID_QUERY = "DELETE FROM restablecer_password WHERE id_usuario = :id";
