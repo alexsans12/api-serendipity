@@ -3,14 +3,12 @@ package com.serendipity.ecommerce.domain;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.fromUsuario;
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toList;
 
 @RequiredArgsConstructor
 public class UsuarioPrincipal implements UserDetails {
@@ -19,17 +17,18 @@ public class UsuarioPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return stream(this.rol.getPermiso().split(",".trim())).map(SimpleGrantedAuthority::new).collect(toList());
+        //return stream(rol.getPermiso().split(",".trim())).map(SimpleGrantedAuthority::new).collect(toList());
+        return AuthorityUtils.commaSeparatedStringToAuthorityList(rol.getPermiso());
     }
 
     @Override
     public String getPassword() {
-        return this.usuario.getPassword();
+        return usuario.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return this.usuario.getEmail();
+        return usuario.getEmail();
     }
 
     @Override
@@ -49,10 +48,10 @@ public class UsuarioPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return this.usuario.isEstado();
+        return usuario.isEstado();
     }
 
     public UsuarioDTO getUsuario() {
-        return fromUsuario(this.usuario, this.rol);
+        return fromUsuario(usuario, this.rol);
     }
 }

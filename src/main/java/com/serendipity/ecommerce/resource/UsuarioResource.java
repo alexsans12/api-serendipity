@@ -317,7 +317,8 @@ public class UsuarioResource {
 
             return loggedInUsuario;
         } catch (Exception exception) {
-            eventPublisher.publishEvent(new NewUsuarioEvento(FALLO_LOGIN, email));
+            if(null != usuarioService.getUsuarioByEmail(email))
+                eventPublisher.publishEvent(new NewUsuarioEvento(FALLO_LOGIN, email));
             processError(request, response, exception);
             throw new ApiException(exception.getMessage());
         }
