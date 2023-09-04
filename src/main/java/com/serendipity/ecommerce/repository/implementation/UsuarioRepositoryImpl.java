@@ -49,6 +49,7 @@ import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static com.serendipity.ecommerce.constant.Constants.*;
 import static org.apache.commons.lang3.time.DateFormatUtils.format;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
 import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
@@ -57,7 +58,6 @@ import static org.springframework.web.servlet.support.ServletUriComponentsBuilde
 @RequiredArgsConstructor
 @Slf4j
 public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDetailsService {
-    private static final String DATE_FORMAT = "yyyy-MM-dd hh:mm:ss";
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final RolRepository<Rol> rolRepository;
     private final BCryptPasswordEncoder encoder;
@@ -208,9 +208,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         if (isLinkExpired(key, PASSWORD)) throw new ApiException("Este enlace ha expirado. Por favor, restablesca su contraseña nuevamente.");
 
         try {
-            Usuario usuario = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_PASSWORD_URL_QUERY, of("url", getVerificationUrl(key, PASSWORD.getType())), new UsuarioRowMapper());
-            //jdbcTemplate.update(DELETE_USER_FROM_PASSWORD_VERIFICATION_QUERY, of("id", usuario.getIdUsuario()));
-            return usuario;
+            return jdbcTemplate.queryForObject(SELECT_USUARIO_BY_PASSWORD_URL_QUERY, of("url", getVerificationUrl(key, PASSWORD.getType())), new UsuarioRowMapper());
         } catch (EmptyResultDataAccessException exception) {
             log.error(exception.getMessage());
             throw new ApiException("Este link no es válido. Por favor, restablesca su contraseña nuevamente");

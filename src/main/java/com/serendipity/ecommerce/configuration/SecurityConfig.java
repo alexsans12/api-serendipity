@@ -6,14 +6,12 @@ import com.serendipity.ecommerce.handler.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -21,13 +19,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static com.serendipity.ecommerce.constant.Constants.PUBLIC_URLS;
 import static org.springframework.http.HttpMethod.DELETE;
-import static org.springframework.security.config.Customizer.withDefaults;
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 @Configuration
@@ -40,31 +37,20 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final UserDetailsService userDetailsService;
     private final CustomAuthorizationFilter customAuthorizationFilter;
-    private static final String[] PUBLIC_URLS = {
-            "/api/v1/usuario/login/**",
-            "/api/v1/usuario/register/**",
-            "/api/v1/usuario/verify/code/**",
-            "/api/v1/usuario/reset-password/**",
-            "/api/v1/usuario/verify/password/**",
-            "/api/v1/usuario/verify/account/**",
-            "/api/v1/usuario/refresh/token/**",
-            "/api/v1/usuario/image/**",
-            "/api/v1/usuario/new/password/**",
-    };
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable).cors(cors-> cors.configurationSource(corsConfigurationSource()));
-        http.sessionManagement((session) -> session.sessionCreationPolicy(STATELESS));
-        http.authorizeHttpRequests((request) -> request.requestMatchers(PUBLIC_URLS).permitAll());
-        http.authorizeHttpRequests((request) ->
+        http.csrf(csrf -> csrf.disable()).cors(cors-> cors.configurationSource(corsConfigurationSource()));
+        http.sessionManagement(session -> session.sessionCreationPolicy(STATELESS));
+        http.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_URLS).permitAll());
+        http.authorizeHttpRequests(request ->
                 request.requestMatchers(DELETE, "/api/v1/usuario/delete/**")
                         .hasAnyAuthority("DELETE:USUARIO"));
-        http.authorizeHttpRequests((request) ->
+        http.authorizeHttpRequests(request ->
                 request.requestMatchers(DELETE, "/api/v1/producto/delete/**")
                         .hasAnyAuthority("DELETE:PRODUCTO"));
-        http.exceptionHandling((exception) -> exception.accessDeniedHandler(customAccessDeniedHandler).authenticationEntryPoint(customAuthenticationEntryPoint));
-        http.authorizeHttpRequests((request) -> request.anyRequest().authenticated());
+        http.exceptionHandling(exception -> exception.accessDeniedHandler(customAccessDeniedHandler).authenticationEntryPoint(customAuthenticationEntryPoint));
+        http.authorizeHttpRequests(request -> request.anyRequest().authenticated());
         http.addFilterBefore(customAuthorizationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

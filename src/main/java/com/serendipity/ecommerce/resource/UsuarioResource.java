@@ -27,6 +27,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static com.serendipity.ecommerce.constant.Constants.TOKEN_PREFIX;
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
 import static com.serendipity.ecommerce.enumeration.EventoType.*;
 import static com.serendipity.ecommerce.utils.ExceptionUtils.processError;
@@ -44,8 +45,6 @@ import static org.springframework.web.servlet.support.ServletUriComponentsBuilde
 @RequestMapping("/api/v1/usuario")
 @RequiredArgsConstructor
 public class UsuarioResource {
-    private static final String TOKEN_PREFIX = "Bearer ";
-
     private final UsuarioService usuarioService;
     private final RolService rolService;
     private final EventoService eventoService;

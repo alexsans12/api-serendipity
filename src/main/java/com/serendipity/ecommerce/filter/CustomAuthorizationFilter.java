@@ -15,11 +15,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
+import static com.serendipity.ecommerce.constant.Constants.*;
 import static com.serendipity.ecommerce.utils.ExceptionUtils.processError;
 import static java.util.Arrays.asList;
-import static java.util.Map.of;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
@@ -28,19 +27,8 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 @RequiredArgsConstructor
 @Slf4j
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
-    private static final String HTTP_OPTIONS_METHOD = "OPTIONS";
     private final TokenProvider tokenProvider;
-    private static final String TOKEN_PREFIX = "Bearer ";
-    protected static final String TOKEN_KEY="token";
-    protected static final String EMAIL_KEY="email";
-    private static final String[] PUBLIC_ROUTES = {
-            "/api/v1/usuario/login",
-            "/api/v1/usuario/register",
-            "/api/v1/usuario/verify/code",
-            "/api/v1/usuario/refresh/token",
-            "/api/v1/usuario/image",
-            "/api/v1/usuario/new/password",
-    };
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filter) throws ServletException, IOException {
         try {

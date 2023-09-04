@@ -8,7 +8,6 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.service.UsuarioService;
-import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,12 +18,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
 import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
+import static com.serendipity.ecommerce.constant.Constants.*;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
@@ -34,18 +32,13 @@ import static java.util.stream.Collectors.toList;
 @Component
 @RequiredArgsConstructor
 public class TokenProvider {
-    private static final String SERENDIPITY_LLC = "SERENDIPITY_LLC";
-    private static final String CUSTOMER_MANAGEMENT_SERVICE = "CUSTOMER_MANAGEMENT_SERVICE";
-    private static final String AUTHORITIES = "authorities";
-    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 432_000_000; //1_800_000; // 30 minutes
-    private static final long REFRESH_TOKEN_EXPIRATION_TIME = 432_000_000; // 5 days
-    public static final String TOKEN_CANNOT_BE_VERIFIED = "Token no puede ser verificado";
+
     @Value("${jwt.secret}")
     private String secret;
     private final UsuarioService usuarioService;
 
     public String createAccessToken(UsuarioPrincipal usuarioPrincipal) {
-        return JWT.create().withIssuer(SERENDIPITY_LLC).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
+        return JWT.create().withIssuer(SERENDIPITY_LLC).withAudience(ECOMMERCE_SERVICE)
                 .withIssuedAt(new Date()).withSubject(String.valueOf(usuarioPrincipal.getUsuario().getIdUsuario()))
                 .withArrayClaim(AUTHORITIES, getClaimsFromUsuario(usuarioPrincipal))
                 .withExpiresAt(new Date(currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
@@ -53,8 +46,7 @@ public class TokenProvider {
     }
 
     public String createRefreshToken(UsuarioPrincipal usuarioPrincipal) {
-        String[] claims = getClaimsFromUsuario(usuarioPrincipal);
-        return JWT.create().withIssuer(SERENDIPITY_LLC).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
+        return JWT.create().withIssuer(SERENDIPITY_LLC).withAudience(ECOMMERCE_SERVICE)
                 .withIssuedAt(new Date()).withSubject(String.valueOf(usuarioPrincipal.getUsuario().getIdUsuario()))
                 .withExpiresAt(new Date(currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
                 .sign(HMAC512(secret.getBytes(UTF_8)));
