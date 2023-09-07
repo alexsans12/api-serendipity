@@ -3,26 +3,35 @@ package com.serendipity.ecommerce.resource;
 import com.serendipity.ecommerce.domain.HttpResponse;
 import com.serendipity.ecommerce.domain.Marca;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
-import com.serendipity.ecommerce.dtomapper.MarcaDTOMapper;
+import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.service.MarcaService;
 import com.serendipity.ecommerce.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import static com.serendipity.ecommerce.dtomapper.MarcaDTOMapper.fromMarca;
+import static com.serendipity.ecommerce.dtomapper.MarcaDTOMapper.toMarca;
+import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
 
 @RestController
 @RequestMapping("/api/v1/marca")
 @RequiredArgsConstructor
+@Slf4j
 public class MarcaResource {
     private final MarcaService marcaService;
     private final UsuarioService usuarioService;
@@ -32,7 +41,7 @@ public class MarcaResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("marcas", marcaService.getMarcas(page.orElse(0), size.orElse(10)).map(MarcaDTOMapper::fromMarca)))
+                        .data(of("marcas", marcaService.getMarcas(page.orElse(0), size.orElse(10))))
                         .message("Lista de marcas obtenida correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -55,14 +64,10 @@ public class MarcaResource {
 
     @PostMapping("/create")
     public ResponseEntity<HttpResponse> createMarca(@AuthenticationPrincipal UsuarioDTO usuario, @RequestBody Marca marca) {
-        marca.setCreadoPor(usuario.getIdUsuario());
-        marca.setEstado(true);
-        marca.setFechaCreacion(now());
         return ResponseEntity.created(URI.create(""))
                 .body(HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", usuarioService.getUsuarioByEmail(usuario.getEmail()),
-                                "marca", marcaService.createMarca(marca)))
+                        .data(of("marca", marcaService.createMarca(marca, usuario)))
                         .message("Marca creada correctamente")
                         .httpStatus(CREATED)
                         .httpStatusCode(CREATED.value())
@@ -76,12 +81,36 @@ public class MarcaResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", usuarioService.getUsuarioByEmail(usuario.getEmail()),
-                                "marca", marcaService.updateMarca(marca)))
+                        .data(of("marca", marcaService.updateMarca(marca)))
                         .message("Marca actualizada correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
                         .build()
         );
+    }
+
+    @PatchMapping("/update/image/{id}")
+    public ResponseEntity<HttpResponse> updateProfileImage(@AuthenticationPrincipal UsuarioDTO usuarioDTO, @PathVariable Long id, @RequestParam("image") MultipartFile image) {
+        Marca marca = marcaService.getMarcaById(id);
+        marca.setModificadoPor(usuarioDTO.getIdUsuario());
+        marca.setFechaModificacion(now());
+        marca = marcaService.updateImage(marca, image);
+        marca.setModificadoPorUsuario(toUsuario(usuarioDTO));
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("marca", fromMarca(marca)))
+                        .message("Imagen de la marca actualizada exitosamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build());
+    }
+
+    @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
+    public byte[] getProfileImage(@PathVariable("fileName") String fileName) {
+        try {
+            return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/marcas/" + fileName));
+        } catch (IOException e) {
+            throw new ApiException("Error al obtener la imagen del usuario " + fileName);
+        }
     }
 }

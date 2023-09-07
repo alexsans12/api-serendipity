@@ -2,8 +2,8 @@ package com.serendipity.ecommerce.resource;
 
 import com.serendipity.ecommerce.domain.Categoria;
 import com.serendipity.ecommerce.domain.HttpResponse;
-import com.serendipity.ecommerce.domain.Marca;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
+import com.serendipity.ecommerce.dtomapper.CategoriaDTOMapper;
 import com.serendipity.ecommerce.service.CategoriaService;
 import com.serendipity.ecommerce.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class CategoriaResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("categorias", categoriaService.getCategorias(page.orElse(0), size.orElse(10))))
+                        .data(of("categorias", categoriaService.getCategorias(page.orElse(0), size.orElse(10)).map(CategoriaDTOMapper::fromCategoria)))
                         .message("Lista de categorias obtenida correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -54,11 +54,12 @@ public class CategoriaResource {
 
     @PostMapping("/create")
     public ResponseEntity<HttpResponse> createCategoria(@AuthenticationPrincipal UsuarioDTO usuario, @RequestBody Categoria categoria) {
+        categoria.setCreadoPor(usuario.getIdUsuario());
+        categoria.setFechaCreacion(now());
         return ResponseEntity.created(URI.create(""))
                 .body(HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", usuarioService.getUsuarioByEmail(usuario.getEmail()),
-                                "categoria", categoriaService.createCategoria(categoria)))
+                        .data(of("categoria", categoriaService.createCategoria(categoria)))
                         .message("Categoria creada correctamente")
                         .httpStatus(CREATED)
                         .httpStatusCode(CREATED.value())
@@ -67,11 +68,12 @@ public class CategoriaResource {
 
     @PutMapping("/update")
     public ResponseEntity<HttpResponse> updateCategoria(@AuthenticationPrincipal UsuarioDTO usuario, @RequestBody Categoria categoria) {
+        categoria.setModificadoPor(usuario.getIdUsuario());
+        categoria.setFechaModificacion(now());
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", usuarioService.getUsuarioByEmail(usuario.getEmail()),
-                                "categoria", categoriaService.updateCategoria(categoria)))
+                        .data(of("categoria", categoriaService.updateCategoria(categoria)))
                         .message("Categoria actualizada correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())

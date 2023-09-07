@@ -34,7 +34,7 @@ public class Marca {
     @Column(name = "nombre", nullable = false, length = 50, unique = true)
     private String nombre;
 
-    @Column(name = "url_imagen", nullable = false, length = 255)
+    @Column(name = "url_imagen", length = 255)
     private String urlImagen;
 
     @Column(name = "descripcion", nullable = false, columnDefinition = "TEXT")
@@ -55,7 +55,7 @@ public class Marca {
     private Long modificadoPor;
 
     @Column(name = "estado")
-    private boolean estado;
+    private boolean estado = true;
 
     @ManyToOne(fetch = EAGER, cascade = ALL)
     @JoinColumn(name = "creado_por", referencedColumnName = "id_usuario", insertable = false, updatable = false)
