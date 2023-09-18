@@ -4,7 +4,6 @@ import com.serendipity.ecommerce.domain.Marca;
 import com.serendipity.ecommerce.dto.MarcaDTO;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import org.springframework.data.domain.Page;
-import org.springframework.web.multipart.MultipartFile;
 
 public interface MarcaService {
     // Marcas functions
@@ -15,5 +14,4 @@ public interface MarcaService {
     Marca getMarcaById(Long id);
     Marca getMarcaByNombre(String nombre);
     void addProductoToMarca(Long productoId, Long marcaId);
-    Marca updateImage(Marca marca, MultipartFile image);
 }

@@ -1,6 +1,7 @@
 package com.serendipity.ecommerce.service.implementation;
 
 import com.serendipity.ecommerce.domain.Producto;
+import com.serendipity.ecommerce.dtomapper.ProductoDTOMapper;
 import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.repository.CategoriaRepository;
 import com.serendipity.ecommerce.repository.MarcaRepository;
@@ -29,17 +30,12 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     public Producto createProducto(Producto producto) {
         // Check if the Categoria and Marca exist
-        if (!categoriaRepository.existsById(producto.getIdCategoria()) ||
-                !marcaRepository.existsById(producto.getIdMarca())) {
-            throw new ApiException("La Categoria o Marca no existe.");
-        }
-
+        if (!categoriaRepository.existsById(producto.getIdCategoria())) throw new ApiException("La Categoria con ID " + producto.getIdCategoria() + " no existe.");
+        if (!marcaRepository.existsById(producto.getIdMarca())) throw new ApiException("La Marca con ID " + producto.getIdMarca() + " no existe.");
         // Generate SKU based on some rule, for example:
         String sku = generateSku(producto.getIdMarca(), producto.getIdCategoria());
-
         // Set SKU
         producto.setSku(sku);
-
         // Save the Producto
         return productoRepository.save(producto);
     }

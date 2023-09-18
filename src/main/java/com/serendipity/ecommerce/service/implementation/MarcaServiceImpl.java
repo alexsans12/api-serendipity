@@ -45,7 +45,6 @@ public class MarcaServiceImpl implements MarcaService {
 
     @Override
     public Marca updateMarca(Marca marca) {
-        log.info(marca.getCreadoPorUsuario().getNombre());
         return marcaRepository.save(marca);
     }
 
@@ -78,40 +77,5 @@ public class MarcaServiceImpl implements MarcaService {
             producto.setFechaModificacion(now());
             productoRepository.save(producto);
         });
-    }
-
-    @Override
-    public Marca updateImage(Marca marca, MultipartFile image) {
-        String urlFoto = setImageUrl(marca.getNombre());
-        marca.setUrlImagen(urlFoto);
-        saveImage(marca.getNombre(), image);
-        return marcaRepository.save(marca);
-    }
-
-    private String setImageUrl(String marca) {
-        return fromCurrentContextPath()
-                .path("/api/v1/marca/image/" + marca.toLowerCase() + ".png" )
-                .toUriString();
-    }
-
-    private void saveImage(String marca, MultipartFile image) {
-        Path fileStorageLocation = Paths.get(System.getProperty("user.home")+"/Downloads/images/marcas/").toAbsolutePath().normalize();
-        if(!Files.exists(fileStorageLocation)) {
-            try {
-                Files.createDirectories(fileStorageLocation);
-            } catch (Exception exception) {
-                log.error(exception.getMessage());
-                throw new ApiException("No se pudo crear el directorio donde se almacenarán los archivos subidos.");
-            }
-            log.info("Directorio creado con éxito, {}", fileStorageLocation);
-        }
-
-        try {
-            Files.copy(image.getInputStream(), fileStorageLocation.resolve(marca + ".png"), REPLACE_EXISTING);
-        } catch (IOException exception) {
-            log.error(exception.getMessage());
-            throw new ApiException(exception.getMessage());
-        }
-        log.info("Imagen guardada con éxito, {}", fileStorageLocation);
     }
 }

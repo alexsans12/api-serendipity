@@ -1,38 +1,58 @@
 package com.serendipity.ecommerce.resource;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.serendipity.ecommerce.domain.HttpResponse;
+import com.serendipity.ecommerce.domain.ImagenProducto;
 import com.serendipity.ecommerce.domain.Producto;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
-import com.serendipity.ecommerce.service.MarcaService;
-import com.serendipity.ecommerce.service.ProductoService;
-import com.serendipity.ecommerce.service.UsuarioService;
+import com.serendipity.ecommerce.dtomapper.ProductoDTOMapper;
+import com.serendipity.ecommerce.exception.ApiException;
+import com.serendipity.ecommerce.service.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
+import static com.serendipity.ecommerce.dtomapper.ProductoDTOMapper.fromProducto;
+import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
+import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
 
 @RestController
 @RequestMapping("/api/v1/producto")
 @RequiredArgsConstructor
+@Slf4j
 public class ProductoResource {
     private final ProductoService productoService;
-    private final UsuarioService usuarioService;
+    private final ImagenProductoService imagenProductoService;
     private final MarcaService marcaService;
+    private final UsuarioService usuarioService;
+    private final CategoriaService categoriaService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping("/list")
     public ResponseEntity<HttpResponse> getProductos(@RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("productos", productoService.getProductos(page.orElse(0), size.orElse(10))))
+                        .data(of("productos", productoService.getProductos(page.orElse(0), size.orElse(10)).map(ProductoDTOMapper::fromProducto)))
                         .message("Lista de productos obtenida correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -45,7 +65,7 @@ public class ProductoResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("producto", productoService.getProductoById(id)))
+                        .data(of("producto", fromProducto(productoService.getProductoById(id))))
                         .message("Producto obtenido correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -54,19 +74,29 @@ public class ProductoResource {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<HttpResponse> createProducto(@AuthenticationPrincipal UsuarioDTO usuario, @RequestBody Producto producto) {
-        usuario = usuarioService.getUsuarioByEmail(usuario.getEmail());
-        producto.setCreadoPor(usuario.getIdUsuario());
-        producto.setEstado(true);
-        return ResponseEntity.created(URI.create(""))
-                .body(HttpResponse.builder()
-                        .timestamp(now().toString())
-                        .data(of("usuario", usuario,
-                                "producto", productoService.createProducto(producto)))
-                        .message("Producto creado exitosamente")
-                        .httpStatus(CREATED)
-                        .httpStatusCode(CREATED.value())
-                        .build());
+    public ResponseEntity<HttpResponse> createProducto(@AuthenticationPrincipal UsuarioDTO usuarioDTO, @RequestParam("image") MultipartFile[] images, @RequestParam("producto") String jsonData) {
+        try {
+            Producto producto = objectMapper.readValue(jsonData, Producto.class);
+            producto.setCreadoPor(usuarioDTO.getIdUsuario());
+            producto.setFechaCreacion(now());
+            producto.setEstado(true);
+            producto = productoService.createProducto(producto);
+            producto.setImagenesProducto(saveImages(producto.getSku(), images, producto.getIdProducto()));
+            producto.setMarca(marcaService.getMarcaById(producto.getIdMarca()));
+            producto.setCategoria(categoriaService.getCategoriaById(producto.getIdCategoria()));
+            producto.setCreadoPorUsuario(toUsuario(usuarioDTO));
+
+            return ResponseEntity.created(URI.create(""))
+                    .body(HttpResponse.builder()
+                            .timestamp(now().toString())
+                            .data(of("producto", fromProducto(producto)))
+                            .message("Producto creado exitosamente")
+                            .httpStatus(CREATED)
+                            .httpStatusCode(CREATED.value())
+                            .build());
+        } catch (JsonProcessingException e) {
+            throw new ApiException(e.getMessage());
+        }
     }
 
     @GetMapping("/search")
@@ -74,7 +104,7 @@ public class ProductoResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("productos", productoService.searchProductosByName(nombre.orElse(""), page.orElse(0), size.orElse(10))))
+                        .data(of("productos", productoService.searchProductosByName(nombre.orElse(""), page.orElse(0), size.orElse(10)).map(ProductoDTOMapper::fromProducto)))
                         .message("Productos obtenidos correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -82,12 +112,12 @@ public class ProductoResource {
         );
     }
 
-    @GetMapping("/marca/{nombre}")
-    public ResponseEntity<HttpResponse> searchProductoByMarca(@PathVariable String nombre, @RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
+    @GetMapping("/marca")
+    public ResponseEntity<HttpResponse> searchProductoByMarca(@RequestParam Optional<String> nombre, @RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("productos", productoService.searchProductosByMarca(nombre, page.orElse(0), size.orElse(10))))
+                        .data(of("productos", productoService.searchProductosByMarca(nombre.orElse(""), page.orElse(0), size.orElse(10)).map(ProductoDTOMapper::fromProducto)))
                         .message("Productos obtenidos correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -96,16 +126,112 @@ public class ProductoResource {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<HttpResponse> updateProducto(@AuthenticationPrincipal UsuarioDTO usuario, @RequestBody Producto producto) {
-        return ResponseEntity.ok(
-                HttpResponse.builder()
-                        .timestamp(now().toString())
-                        .data(of("usuario", usuarioService.getUsuarioByEmail(usuario.getEmail()),
-                                "producto", productoService.updateProducto(producto)))
-                        .message("Producto actualizado correctamente")
-                        .httpStatus(OK)
-                        .httpStatusCode(OK.value())
-                        .build()
-        );
+    public ResponseEntity<HttpResponse> updateProducto(@AuthenticationPrincipal UsuarioDTO usuarioDTO, @RequestParam("image") MultipartFile[] images, @RequestParam("producto") String jsonData) {
+        try {
+            Producto producto = objectMapper.readValue(jsonData, Producto.class);
+            Producto existingProducto = productoService.getProductoById(producto.getIdProducto());
+            producto.setCreadoPor(existingProducto.getCreadoPor());
+            producto.setFechaCreacion(existingProducto.getFechaCreacion());
+            producto.setImagenesProducto(saveImages(producto.getSku(), images, producto.getIdProducto()));
+            producto.setMarca(marcaService.getMarcaById(producto.getIdMarca()));
+            producto.setCategoria(categoriaService.getCategoriaById(producto.getIdCategoria()));
+            producto.setModificadoPor(usuarioDTO.getIdUsuario());
+            producto.setFechaModificacion(now());
+
+            Producto updateProducto = productoService.updateProducto(producto);
+            updateProducto.setCreadoPor(existingProducto.getCreadoPor());
+            updateProducto.setFechaCreacion(existingProducto.getFechaCreacion());
+            updateProducto.setCreadoPorUsuario(toUsuario(usuarioService.getUsuarioById(producto.getCreadoPor())));
+            updateProducto.setFechaCreacion(producto.getFechaCreacion());
+            updateProducto.setModificadoPorUsuario(toUsuario(usuarioService.getUsuarioById(usuarioDTO.getIdUsuario())));
+            updateProducto.setImagenesProducto(imagenProductoService.getImagenProductoByIdProducto(updateProducto.getIdProducto()));
+
+            return ResponseEntity.ok(
+                    HttpResponse.builder()
+                            .timestamp(now().toString())
+                            .data(of("producto", fromProducto(updateProducto)))
+                            .message("Producto actualizado correctamente")
+                            .httpStatus(OK)
+                            .httpStatusCode(OK.value())
+                            .build()
+            );
+        } catch (JsonProcessingException e) {
+            throw new ApiException(e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
+    public byte[] getProfileImage(@PathVariable("fileName") String fileName) {
+        try {
+            return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/marcas/" + fileName));
+        } catch (IOException e) {
+            throw new ApiException("Error al obtener la imagen de la marca " + fileName);
+        }
+    }
+
+    private String setImageUrl(String nombre) {
+        return fromCurrentContextPath()
+                .path("/api/v1/producto/image/" + nombre + ".png")
+                .toUriString();
+    }
+
+    private void saveImage(String nombre, MultipartFile image) {
+        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/images/producto/").toAbsolutePath().normalize();
+        if (!Files.exists(fileStorageLocation)) {
+            try {
+                Files.createDirectories(fileStorageLocation);
+            } catch (Exception exception) {
+                log.error(exception.getMessage());
+                throw new ApiException("No se pudo crear el directorio donde se almacenarán los archivos subidos.");
+            }
+            log.info("Directorio creado con éxito, {}", fileStorageLocation);
+        }
+
+        try {
+            Files.copy(image.getInputStream(), fileStorageLocation.resolve(nombre + ".png"), REPLACE_EXISTING);
+        } catch (IOException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException(exception.getMessage());
+        }
+        log.info("Imagen guardada con éxito, {}", fileStorageLocation);
+    }
+
+    private void deleteImage(String nombre) {
+        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/images/producto/").toAbsolutePath().normalize();
+        Path filePath = fileStorageLocation.resolve(nombre + ".png");
+
+        try {
+            boolean fileDeleted = Files.deleteIfExists(filePath);
+
+            if (fileDeleted) {
+                log.info("Imagen eliminada con éxito, {}", filePath);
+            } else {
+                log.warn("Imagen no encontrada, {}", filePath);
+            }
+        } catch (IOException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException(exception.getMessage());
+        }
+    }
+
+    private List<ImagenProducto> saveImages(String SKU, MultipartFile[] images, Long idProducto) {
+        List<ImagenProducto> imagenesActuales = imagenProductoService.getImagenProductoByIdProducto(idProducto);
+        for (ImagenProducto imagenProducto : imagenesActuales) {
+            deleteImage(imagenProducto.getUrl().substring(imagenProducto.getUrl().lastIndexOf("/") + 1, imagenProducto.getUrl().length() - 4));
+        }
+        imagenProductoService.deleteImagenProductoByIdProducto(idProducto);
+        List<ImagenProducto> imagenes = new ArrayList<>();
+        int iterationCount = 1;
+        for (MultipartFile image : images) {
+            String nombreImagen = SKU + "_" + iterationCount++;
+            saveImage(nombreImagen, image);
+            ImagenProducto imagenProducto = new ImagenProducto();
+            imagenProducto.setUrl(setImageUrl(nombreImagen));
+            imagenProducto.setIdProducto(idProducto);
+            imagenes.add(imagenProducto);
+
+            imagenProductoService.createImagenProducto(imagenProducto);
+        }
+        return imagenes;
     }
 }

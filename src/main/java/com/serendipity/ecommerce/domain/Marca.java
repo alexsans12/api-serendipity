@@ -1,7 +1,6 @@
 package com.serendipity.ecommerce.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.serendipity.ecommerce.dto.UsuarioDTO;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,11 +9,10 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
 import static jakarta.persistence.CascadeType.ALL;
-import static jakarta.persistence.FetchType.EAGER;
+import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Getter
@@ -57,11 +55,11 @@ public class Marca {
     @Column(name = "estado")
     private boolean estado = true;
 
-    @ManyToOne(fetch = EAGER, cascade = ALL)
+    @ManyToOne(fetch = LAZY, cascade = ALL)
     @JoinColumn(name = "creado_por", referencedColumnName = "id_usuario", insertable = false, updatable = false)
     private Usuario creadoPorUsuario;
 
-    @ManyToOne(fetch = EAGER, cascade = ALL)
+    @ManyToOne(fetch = LAZY, cascade = ALL)
     @JoinColumn(name = "modificado_por", referencedColumnName = "id_usuario", insertable = false, updatable = false)
     private Usuario modificadoPorUsuario;
 }

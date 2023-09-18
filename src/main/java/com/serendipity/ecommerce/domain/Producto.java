@@ -12,10 +12,12 @@ import lombok.experimental.SuperBuilder;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
-import static jakarta.persistence.CascadeType.ALL;
+import static jakarta.persistence.CascadeType.*;
 import static jakarta.persistence.FetchType.EAGER;
+import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static jakarta.persistence.TemporalType.TIMESTAMP;
 
@@ -41,7 +43,7 @@ public class Producto {
     @Column(name = "nombre", nullable = false, length = 255)
     private String nombre;
 
-    @Column(name = "sku", nullable = false, unique = true, length = 12)
+    @Column(name = "sku", nullable = false, unique = true, length = 12, updatable = false)
     private String sku;
 
     @Column(name = "descripcion", nullable = false, columnDefinition = "TEXT")
@@ -59,11 +61,11 @@ public class Producto {
     @Column(name = "estado", nullable = false)
     private boolean estado;
 
-    @Column(name = "fecha_creacion", nullable = false)
+    @Column(name = "fecha_creacion", nullable = false, updatable = false)
     @Temporal(TIMESTAMP)
     private LocalDateTime fechaCreacion;
 
-    @Column(name = "creado_por", nullable = false)
+    @Column(name = "creado_por", nullable = false, updatable = false)
     private Long creadoPor;
 
     @Column(name = "fecha_modificacion")
@@ -74,14 +76,21 @@ public class Producto {
     private Long modificadoPor;
 
     @ManyToOne(fetch = EAGER, cascade = ALL)
+    @JoinColumn(name = "id_marca", referencedColumnName = "id_marca", insertable = false, updatable = false)
     private Marca marca;
 
     @ManyToOne(fetch = EAGER, cascade = ALL)
+    @JoinColumn(name = "id_categoria", referencedColumnName = "id_categoria", insertable = false, updatable = false)
     private Categoria categoria;
 
-    @ManyToOne(fetch = EAGER, cascade = ALL)
+    @ManyToOne(fetch = LAZY, cascade = MERGE)
+    @JoinColumn(name = "creado_por", referencedColumnName = "id_usuario", insertable = false, updatable = false)
     private Usuario creadoPorUsuario;
 
-    @ManyToOne(fetch = EAGER, cascade = ALL)
+    @ManyToOne(fetch = LAZY, cascade = MERGE)
+    @JoinColumn(name = "modificado_por", referencedColumnName = "id_usuario", insertable = false, updatable = false)
     private Usuario modificadoPorUsuario;
+
+    @OneToMany(mappedBy = "producto", fetch = EAGER)
+    private List<ImagenProducto> imagenesProducto;
 }

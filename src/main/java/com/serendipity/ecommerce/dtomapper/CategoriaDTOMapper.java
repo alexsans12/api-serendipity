@@ -29,10 +29,10 @@ public class CategoriaDTOMapper {
         return categoriaDTO;
     }
 
-    public static Categoria toCategoria(CategoriaDTO categoriaDTO) {
+    /*public static Categoria toCategoria(CategoriaDTO categoriaDTO) {
         Categoria categoria = new Categoria();
         copyProperties(categoriaDTO, categoria);
         copyProperties(categoriaDTO.getCategoriaPadre(), categoria.getCategoriaPadre());
         return categoria;
-    }
+    }*/
 }
