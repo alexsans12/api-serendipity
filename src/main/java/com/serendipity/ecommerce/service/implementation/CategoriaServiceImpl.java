@@ -1,6 +1,8 @@
 package com.serendipity.ecommerce.service.implementation;
 
 import com.serendipity.ecommerce.domain.Categoria;
+import com.serendipity.ecommerce.dto.CategoriaHierarchyDTO;
+import com.serendipity.ecommerce.dtomapper.CategoriaDTOMapper;
 import com.serendipity.ecommerce.repository.CategoriaRepository;
 import com.serendipity.ecommerce.repository.ProductoRepository;
 import com.serendipity.ecommerce.service.CategoriaService;
@@ -11,8 +13,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+import static com.serendipity.ecommerce.dtomapper.CategoriaDTOMapper.mapToHierarchyDTO;
 import static java.time.LocalDateTime.now;
 import static org.springframework.data.domain.PageRequest.of;
 
@@ -57,5 +62,20 @@ public class CategoriaServiceImpl implements CategoriaService {
             producto.setFechaModificacion(now());
             productoRepository.save(producto);
         });
+    }
+
+    public List<CategoriaHierarchyDTO> getCategoriasConHijas() {
+        List<Categoria> categorias = categoriaRepository.findAll();
+        List<CategoriaHierarchyDTO> categoriasHierarchy = new ArrayList<>();
+
+        for (Categoria categoria : categorias) {
+            if (categoria.getIdCategoriaPadre() == null) {
+                // Es una categoría padre
+                CategoriaHierarchyDTO categoriaDTO = mapToHierarchyDTO(categoria, categorias);
+                categoriasHierarchy.add(categoriaDTO);
+            }
+        }
+
+        return categoriasHierarchy;
     }
 }

@@ -26,12 +26,25 @@ public class CategoriaResource {
     private final CategoriaService categoriaService;
     private final UsuarioService usuarioService;
 
-    @GetMapping("/list")
+    @GetMapping("/list-all")
     public ResponseEntity<HttpResponse> getCategorias(@RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("categorias", categoriaService.getCategorias(page.orElse(0), size.orElse(10)).map(CategoriaDTOMapper::fromCategoria)))
+                        .message("Lista de categorias obtenida correctamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build()
+        );
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<HttpResponse> getCategoriasWithChilds() {
+        return ResponseEntity.ok(
+                HttpResponse.builder()
+                        .timestamp(now().toString())
+                        .data(of("categorias", categoriaService.getCategoriasConHijas()))
                         .message("Lista de categorias obtenida correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())

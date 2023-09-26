@@ -23,10 +23,6 @@ public class ProductoDTO {
     private boolean estado;
     // Imagenes
     private List<ImagenProducto> imagenes;
-    // Marca
-    private Long idMarca;
-    private String nombreMarca;
-    private String urlImagenMarca;
     // Categoria
     private Long idCategoria;
     private String nombreCategoria;

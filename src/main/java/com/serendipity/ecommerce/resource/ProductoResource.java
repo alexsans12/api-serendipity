@@ -42,7 +42,6 @@ import static org.springframework.web.servlet.support.ServletUriComponentsBuilde
 public class ProductoResource {
     private final ProductoService productoService;
     private final ImagenProductoService imagenProductoService;
-    private final MarcaService marcaService;
     private final UsuarioService usuarioService;
     private final CategoriaService categoriaService;
     private final ObjectMapper objectMapper;
@@ -73,6 +72,19 @@ public class ProductoResource {
         );
     }
 
+    @GetMapping("/sku/{sku}")
+    public ResponseEntity<HttpResponse> getProductoBySku(@PathVariable String sku) {
+        return ResponseEntity.ok(
+                HttpResponse.builder()
+                        .timestamp(now().toString())
+                        .data(of("producto", fromProducto(productoService.getProductoBySku(sku))))
+                        .message("Producto obtenido correctamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build()
+        );
+    }
+
     @PostMapping("/create")
     public ResponseEntity<HttpResponse> createProducto(@AuthenticationPrincipal UsuarioDTO usuarioDTO, @RequestParam("image") MultipartFile[] images, @RequestParam("producto") String jsonData) {
         try {
@@ -82,7 +94,6 @@ public class ProductoResource {
             producto.setEstado(true);
             producto = productoService.createProducto(producto);
             producto.setImagenesProducto(saveImages(producto.getSku(), images, producto.getIdProducto()));
-            producto.setMarca(marcaService.getMarcaById(producto.getIdMarca()));
             producto.setCategoria(categoriaService.getCategoriaById(producto.getIdCategoria()));
             producto.setCreadoPorUsuario(toUsuario(usuarioDTO));
 
@@ -112,12 +123,12 @@ public class ProductoResource {
         );
     }
 
-    @GetMapping("/marca")
-    public ResponseEntity<HttpResponse> searchProductoByMarca(@RequestParam Optional<String> nombre, @RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
+    @GetMapping("/categoria")
+    public ResponseEntity<HttpResponse> searchProductoByCategoria(@RequestParam Optional<String> nombre, @RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("productos", productoService.searchProductosByMarca(nombre.orElse(""), page.orElse(0), size.orElse(10)).map(ProductoDTOMapper::fromProducto)))
+                        .data(of("productos", productoService.searchProductosByCategoria(nombre.orElse(""), page.orElse(0), size.orElse(10)).map(ProductoDTOMapper::fromProducto)))
                         .message("Productos obtenidos correctamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -133,7 +144,6 @@ public class ProductoResource {
             producto.setCreadoPor(existingProducto.getCreadoPor());
             producto.setFechaCreacion(existingProducto.getFechaCreacion());
             producto.setImagenesProducto(saveImages(producto.getSku(), images, producto.getIdProducto()));
-            producto.setMarca(marcaService.getMarcaById(producto.getIdMarca()));
             producto.setCategoria(categoriaService.getCategoriaById(producto.getIdCategoria()));
             producto.setModificadoPor(usuarioDTO.getIdUsuario());
             producto.setFechaModificacion(now());
@@ -163,9 +173,9 @@ public class ProductoResource {
     @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
     public byte[] getProfileImage(@PathVariable("fileName") String fileName) {
         try {
-            return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/marcas/" + fileName));
+            return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/producto/" + fileName));
         } catch (IOException e) {
-            throw new ApiException("Error al obtener la imagen de la marca " + fileName);
+            throw new ApiException("Error al obtener la imagen del producto con SKU " + fileName);
         }
     }
 

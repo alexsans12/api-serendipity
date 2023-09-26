@@ -13,8 +13,6 @@ public class ProductoDTOMapper {
         copyProperties(producto, productoDTO);
         productoDTO.setNombreCreadoPor(producto.getCreadoPorUsuario().getNombre());
         productoDTO.setApellidoCreadoPor(producto.getCreadoPorUsuario().getApellido());
-        productoDTO.setNombreMarca(producto.getMarca().getNombre());
-        productoDTO.setUrlImagenMarca(producto.getMarca().getUrlImagen());
         productoDTO.setNombreCategoria(producto.getCategoria().getNombre());
 
         if(producto.getModificadoPorUsuario() != null) {

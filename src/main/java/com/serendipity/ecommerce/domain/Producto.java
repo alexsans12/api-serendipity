@@ -34,9 +34,6 @@ public class Producto {
     @Column(name = "id_producto")
     private Long idProducto;
 
-    @Column(name = "id_marca", nullable = false)
-    private Long idMarca;
-
     @Column(name = "id_categoria", nullable = false)
     private Long idCategoria;
 
@@ -74,10 +71,6 @@ public class Producto {
 
     @Column(name = "modificado_por")
     private Long modificadoPor;
-
-    @ManyToOne(fetch = EAGER, cascade = ALL)
-    @JoinColumn(name = "id_marca", referencedColumnName = "id_marca", insertable = false, updatable = false)
-    private Marca marca;
 
     @ManyToOne(fetch = EAGER, cascade = ALL)
     @JoinColumn(name = "id_categoria", referencedColumnName = "id_categoria", insertable = false, updatable = false)

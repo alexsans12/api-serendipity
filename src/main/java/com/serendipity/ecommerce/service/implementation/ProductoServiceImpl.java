@@ -1,10 +1,8 @@
 package com.serendipity.ecommerce.service.implementation;
 
 import com.serendipity.ecommerce.domain.Producto;
-import com.serendipity.ecommerce.dtomapper.ProductoDTOMapper;
 import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.repository.CategoriaRepository;
-import com.serendipity.ecommerce.repository.MarcaRepository;
 import com.serendipity.ecommerce.repository.ProductoRepository;
 import com.serendipity.ecommerce.service.ProductoService;
 import jakarta.transaction.Transactional;
@@ -13,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
@@ -25,15 +24,13 @@ import static org.springframework.data.domain.PageRequest.of;
 public class ProductoServiceImpl implements ProductoService {
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
-    private final MarcaRepository marcaRepository;
 
     @Override
     public Producto createProducto(Producto producto) {
-        // Check if the Categoria and Marca exist
+        // Check if the Categoria exist
         if (!categoriaRepository.existsById(producto.getIdCategoria())) throw new ApiException("La Categoria con ID " + producto.getIdCategoria() + " no existe.");
-        if (!marcaRepository.existsById(producto.getIdMarca())) throw new ApiException("La Marca con ID " + producto.getIdMarca() + " no existe.");
         // Generate SKU based on some rule, for example:
-        String sku = generateSku(producto.getIdMarca(), producto.getIdCategoria());
+        String sku = generateSku(producto.getIdCategoria());
         // Set SKU
         producto.setSku(sku);
         // Save the Producto
@@ -46,12 +43,6 @@ public class ProductoServiceImpl implements ProductoService {
         Optional<Producto> existingProducto = productoRepository.findById(producto.getIdProducto());
         if (existingProducto.isEmpty()) {
             throw new ApiException("El Producto no existe.");
-        }
-
-        // Check if the Categoria and Marca exist
-        if (!categoriaRepository.existsById(producto.getIdCategoria()) ||
-                !marcaRepository.existsById(producto.getIdMarca())) {
-            throw new ApiException("La Categoria o Marca no existe.");
         }
 
         // Update the Producto
@@ -74,36 +65,44 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
+    public Producto getProductoBySku(String sku) {
+        return productoRepository.findBySku(sku);
+    }
+
+    @Override
     public Page<Producto> searchProductosByName(String name, int page, int size) {
         return productoRepository.findByNombreContaining(name, of(page, size));
     }
 
     @Override
-    public Page<Producto> searchProductosByCategoria(Long categoriaId, int page, int size) {
-        if (!categoriaRepository.existsById(categoriaId)) {
-            log.error("Categoria with ID {} does not exist.", categoriaId);
-            return Page.empty(); // Or throw an exception
-        }
-
+    public Page<Producto> searchProductosByCategoria(String categoria, int page, int size) {
         // Fetch the Productos by Categoria ID
-        return productoRepository.findByCategoriaIdCategoria(categoriaId, of(page, size));
+        return productoRepository.findByCategoriaNombre(categoria, of(page, size));
     }
 
     @Override
-    public Page<Producto> searchProductosByMarca(String marca, int page, int size) {
-        return productoRepository.findByMarcaNombreContaining(marca, of(page, size));
+    public void deleteProducto(Long id) {
+        productoRepository.delete(getProductoById(id));
     }
 
+    @Override
+    public boolean checkStock(Long id) {
+        return productoRepository.checkStock(id);
+    }
 
-    private String generateSku(Long idMarca, Long idCategoria) {
+    @Override
+    public void updateStock(Long id, int cantidad) {
+        productoRepository.updateStock(id, cantidad);
+    }
+
+    private String generateSku(Long idCategoria) {
         // Here you can define your logic to generate SKU
-        // For example, combining first 2 letters of Marca and first 2 letters of Categoria and a random 8-digit number
-        String marcaPrefix = marcaRepository.findById(idMarca).map(m -> m.getNombre().substring(0, 2)).orElse("UN");
-        String categoriaPrefix = categoriaRepository.findById(idCategoria).map(c -> c.getNombre().substring(0, 2)).orElse("UN");
+        // For example, combining first 4 letters of Categoria and a random 8-digit number
+        String categoriaPrefix = categoriaRepository.findById(idCategoria).map(c -> c.getNombre().substring(0, 4)).orElse("UN");
 
         // Generate a unique 8-digit identifier. You can replace this with your logic.
         String uniqueId = randomNumeric(8);
 
-        return (marcaPrefix + categoriaPrefix + uniqueId).toUpperCase();
+        return (categoriaPrefix + uniqueId).toUpperCase();
     }
 }
