@@ -12,6 +12,14 @@ public class Constants {
             "/api/v1/usuario/refresh/token/**",
             "/api/v1/usuario/image/**",
             "/api/v1/usuario/new/password/**",
+            "/api/v1/producto/list/**",
+            "/api/v1/producto/get/**",
+            "/api/v1/producto/search/**",
+            "/api/v1/producto/marca/**",
+            "/api/v1/producto/categoria/**",
+            "/api/v1/producto/image/**",
+            "/api/v1/categoria/list/**",
+            "/api/v1/categoria/list-all/**"
     };
 
     // Security filter constants
@@ -26,6 +34,14 @@ public class Constants {
             "/api/v1/usuario/refresh/token",
             "/api/v1/usuario/image",
             "/api/v1/usuario/new/password",
+            "/api/v1/producto/list",
+            "/api/v1/producto/get",
+            "/api/v1/producto/search",
+            "/api/v1/producto/marca",
+            "/api/v1/producto/categoria",
+            "/api/v1/producto/image",
+            "/api/v1/categoria/list",
+            "/api/v1/categoria/list-all"
     };
 
     // Token provider constants

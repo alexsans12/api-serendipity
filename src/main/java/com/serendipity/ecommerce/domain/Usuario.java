@@ -1,6 +1,10 @@
 package com.serendipity.ecommerce.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
@@ -11,13 +15,17 @@ import lombok.experimental.SuperBuilder;
 import java.time.LocalDateTime;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Data
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(NON_NULL)
+@Entity
 public class Usuario {
+    @Id
+    @Column(name = "id_usuario")
     private Long idUsuario;
     @NotEmpty(message = "El nombre no puede estar vacío")
     private String nombre;
