@@ -5,7 +5,6 @@ import com.serendipity.ecommerce.domain.HttpResponse;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.dtomapper.CategoriaDTOMapper;
 import com.serendipity.ecommerce.service.CategoriaService;
-import com.serendipity.ecommerce.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,11 +19,10 @@ import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
 
 @RestController
-@RequestMapping("/api/v1/categoria")
+@RequestMapping("/api/v1/category")
 @RequiredArgsConstructor
 public class CategoriaResource {
     private final CategoriaService categoriaService;
-    private final UsuarioService usuarioService;
 
     @GetMapping("/list-all")
     public ResponseEntity<HttpResponse> getCategorias(@RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {

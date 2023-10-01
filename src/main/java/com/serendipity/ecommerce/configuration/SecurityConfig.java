@@ -45,7 +45,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable).cors(cors-> cors.configurationSource(corsConfigurationSource()));
         http.sessionManagement(session -> session.sessionCreationPolicy(STATELESS));
         http.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_URLS).permitAll());
-        http.authorizeHttpRequests(request -> request.requestMatchers(OPTIONS).permitAll()); // Not needed
+        //http.authorizeHttpRequests(request -> request.requestMatchers(OPTIONS).permitAll()); // Not needed
         http.authorizeHttpRequests(request ->
                 request.requestMatchers(DELETE, "/api/v1/usuario/delete/**")
                         .hasAnyAuthority("DELETE:USUARIO"));
