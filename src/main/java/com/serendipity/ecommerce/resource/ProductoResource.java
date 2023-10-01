@@ -170,6 +170,28 @@ public class ProductoResource {
         }
     }
 
+    @PutMapping("/update/stock")
+    public ResponseEntity<HttpResponse> updateStockProducto(@AuthenticationPrincipal UsuarioDTO usuarioDTO, @RequestBody Producto producto) {
+        Producto productoOriginal = productoService.getProductoById(producto.getIdProducto());
+        productoOriginal.setModificadoPor(usuarioDTO.getIdUsuario());
+        productoOriginal.setFechaModificacion(now());
+        productoOriginal.setCantidad(productoOriginal.getCantidad() + producto.getCantidad());
+
+        Producto updateProducto = productoService.updateProducto(productoOriginal);
+        updateProducto.setModificadoPorUsuario(toUsuario(usuarioService.getUsuarioById(usuarioDTO.getIdUsuario())));
+        updateProducto.setImagenesProducto(imagenProductoService.getImagenProductoByIdProducto(updateProducto.getIdProducto()));
+
+        return ResponseEntity.ok(
+                HttpResponse.builder()
+                        .timestamp(now().toString())
+                        .data(of("producto", fromProducto(updateProducto)))
+                        .message("Stock actualizado correctamente")
+                        .httpStatus(OK)
+                        .httpStatusCode(OK.value())
+                        .build()
+        );
+    }
+
     @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
     public byte[] getProfileImage(@PathVariable("fileName") String fileName) {
         try {

@@ -11,6 +11,7 @@ import java.util.List;
 
 public interface ProductoRepository extends PagingAndSortingRepository<Producto, Long>, ListCrudRepository<Producto, Long> {
     Producto findBySku(String sku);
+    @Query("SELECT p FROM Producto p WHERE p.nombre LIKE %?1%")
     Page<Producto> findByNombreContaining(String name, Pageable pageable);
     @Query("SELECT p FROM Producto p WHERE p.idCategoria = (SELECT c.idCategoria FROM Categoria c WHERE c.nombre = ?1)")
     Page<Producto> findByCategoriaNombre(String categoria, Pageable pageable);
