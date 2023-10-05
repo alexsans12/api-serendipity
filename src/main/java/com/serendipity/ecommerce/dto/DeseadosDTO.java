@@ -9,8 +9,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class ListaDeseosDTO {
+public class DeseadosDTO {
     private Long idListaDeseos;
     private Long idUsuario;
-    private List<ProductoListaDTO> productoListaDTOList;
+    private List<ProductoDeseadoDTO> productosDeseados;
 }

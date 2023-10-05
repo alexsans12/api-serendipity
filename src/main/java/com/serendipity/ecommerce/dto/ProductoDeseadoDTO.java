@@ -7,7 +7,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class ProductoListaDTO {
+public class ProductoDeseadoDTO {
     private Long idProductoLista;
     private Long idListaDeseos;
     private Long idProducto;

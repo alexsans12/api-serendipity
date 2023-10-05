@@ -25,7 +25,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @JsonInclude(NON_DEFAULT)
 @Entity
 @Table(name = "lista_deseos")
-public class ListaDeseos {
+public class Deseados {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_lista_deseos")
@@ -38,6 +38,6 @@ public class ListaDeseos {
     private LocalDateTime fechaCreacion;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "producto_lista", cascade = ALL, fetch = LAZY)
-    private List<ProductoLista> productoListaList;
+    @OneToMany(mappedBy = "deseados", cascade = ALL, fetch = LAZY)
+    private List<ProductoDeseado> productosDeseados;
 }

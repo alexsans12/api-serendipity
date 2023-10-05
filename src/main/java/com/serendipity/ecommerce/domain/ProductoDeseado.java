@@ -19,8 +19,10 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @AllArgsConstructor
 @JsonInclude(NON_DEFAULT)
 @Entity
-@Table(name = "producto_lista")
-public class ProductoLista {
+@Table(name = "producto_lista", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"id_lista_deseos", "id_producto"})
+})
+public class ProductoDeseado {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_producto_lista")
@@ -32,12 +34,11 @@ public class ProductoLista {
     @Column(name = "id_producto", nullable = false)
     private Long idProducto;
 
-    @ManyToOne(fetch = LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_lista_deseos", referencedColumnName = "id_lista_deseos", insertable = false, updatable = false)
-    private ListaDeseos listaDeseos;
+    private Deseados deseados;
 
-    @ManyToOne(fetch = LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_producto", referencedColumnName = "id_producto", insertable = false, updatable = false)
     private Producto producto;
-
 }
