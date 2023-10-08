@@ -197,14 +197,15 @@ public class CarritoResource {
             }
         }
 
-        return ResponseEntity.created(URI.create(""))
-                .body(HttpResponse.builder()
+        return ResponseEntity.ok(
+                HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("carrito", fromCarrito(carrito, (List<CarritoProducto>) carritoProductoService.findAllCarritoProductosByIdCarrito(carrito.getIdCarrito()))))
                         .message("Eliminado del carrito")
                         .httpStatus(CREATED)
                         .httpStatusCode(CREATED.value())
-                        .build());
+                        .build()
+        );
     }
 
     @PutMapping("/update")
