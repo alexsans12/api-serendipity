@@ -1,6 +1,5 @@
 package com.serendipity.ecommerce.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +11,7 @@ import lombok.experimental.SuperBuilder;
 import java.math.BigDecimal;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
+import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
@@ -22,34 +22,36 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @AllArgsConstructor
 @JsonInclude(NON_DEFAULT)
 @Entity
-@Table(name = "carrito_producto")
-public class CarritoProducto {
+@Table(name = "pedido_producto")
+public class PedidoProducto {
     @Id
     @GeneratedValue(strategy = IDENTITY)
-    @Column(name = "id_carrito_producto")
-    private Long idCarritoProducto;
+    @Column(name = "id_pedido_producto")
+    private Long idPedidoProducto;
 
-    @Column(name = "id_carrito")
-    private Long idCarrito;
+    @Column(name = "id_pedido", nullable = false)
+    private Long idPedido;
+
+    @ManyToOne(fetch = EAGER)
+    @JoinColumn(name = "id_pedido", referencedColumnName = "id_pedido", insertable = false, updatable = false)
+    private Pedido pedido;
 
     @Column(name = "id_producto", nullable = false)
     private Long idProducto;
 
-    @Column(name = "cantidad", nullable = false)
-    private int cantidad;
-
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "id_carrito", referencedColumnName = "id_carrito", insertable = false, updatable = false)
-    private Carrito carrito;
-
-    @ManyToOne(fetch = LAZY)
+    @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "id_producto", referencedColumnName = "id_producto", insertable = false, updatable = false)
     private Producto producto;
 
-    public BigDecimal getSubtotal() {
-        BigDecimal originalPrice = producto.getPrecio();
-        BigDecimal discount = producto.getDescuento();
-        BigDecimal discountedPrice = originalPrice.multiply(BigDecimal.ONE.subtract(discount));
-        return discountedPrice.multiply(BigDecimal.valueOf(cantidad));
-    }
+    @Column(nullable = false)
+    private Integer cantidad;
+
+    @Column(nullable = false)
+    private BigDecimal precio;
+
+    @Column(nullable = false)
+    private BigDecimal descuento;
+
+    @Column(nullable = false)
+    private BigDecimal subtotal;
 }

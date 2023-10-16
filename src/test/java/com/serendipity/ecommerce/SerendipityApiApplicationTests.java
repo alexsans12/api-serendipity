@@ -10,4 +10,5 @@ class SerendipityApiApplicationTests {
 	void contextLoads() {
 	}
 
+
 }

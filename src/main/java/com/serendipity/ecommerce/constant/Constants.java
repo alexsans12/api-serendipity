@@ -19,7 +19,8 @@ public class Constants {
             "/api/v1/producto/marca/**",
             "/api/v1/producto/categoria/**",
             "/api/v1/producto/image/**",
-            "/api/v1/category/list/**"
+            "/api/v1/category/list/**",
+            "/api/v1/review/get-reviews/**"
     };
 
     // Security filter constants
@@ -41,7 +42,8 @@ public class Constants {
             "/api/v1/producto/marca",
             "/api/v1/producto/categoria",
             "/api/v1/producto/image",
-            "/api/v1/category/list"
+            "/api/v1/category/list",
+            "/api/v1/review/get-reviews"
     };
 
     // Token provider constants

@@ -1,6 +1,7 @@
 package com.serendipity.ecommerce.dto;
 
 import com.serendipity.ecommerce.domain.ImagenProducto;
+import com.serendipity.ecommerce.domain.Review;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -23,6 +24,8 @@ public class ProductoDTO {
     private boolean estado;
     // Imagenes
     private List<ImagenProducto> imagenes;
+    // Review
+    private List<Review> reviews;
     // Categoria
     private Long idCategoria;
     private String nombreCategoria;
