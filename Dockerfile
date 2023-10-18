@@ -13,3 +13,4 @@ CMD ["java", "-jar", "app.jar"]
 
 LABEL authors="Alexsans"
 LABEL version="1.0.0"
+LABEL description="This is the base docker image for the spring boot application"
