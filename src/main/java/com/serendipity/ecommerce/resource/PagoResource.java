@@ -49,7 +49,7 @@ public class PagoResource {
     @PostMapping("/create")
     public ResponseEntity<HttpResponse> createPago(@RequestBody Pago pago) {
         pago.setFechaCreacion(now());
-        pago.setEstado(PENDIENTE);
+        pago.setEstado(pago.getEstado());
 
         return ResponseEntity.created(URI.create(""))
                 .body(HttpResponse.builder()

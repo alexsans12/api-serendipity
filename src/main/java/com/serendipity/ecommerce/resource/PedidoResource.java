@@ -59,6 +59,31 @@ public class PedidoResource {
         );
     }
 
+    @GetMapping("/get/{id}")
+    public ResponseEntity<HttpResponse> getPedidoById(@PathVariable Long id) {
+        Pedido pedido = pedidoService.getPedidoById(id).orElse(null);
+        if (pedido != null) {
+            return ResponseEntity.ok(
+                    HttpResponse.builder()
+                            .timestamp(now().toString())
+                            .data(of("pedido", fromPedido(pedido)))
+                            .message("Pedido obtenido correctamente")
+                            .httpStatus(OK)
+                            .httpStatusCode(OK.value())
+                            .build()
+            );
+        } else {
+            return ResponseEntity.badRequest().body(
+                    HttpResponse.builder()
+                            .timestamp(now().toString())
+                            .message("Pedido no encontrado")
+                            .httpStatus(OK)
+                            .httpStatusCode(OK.value())
+                            .build()
+            );
+        }
+    }
+
     @PostMapping("/create")
     public ResponseEntity<HttpResponse> createPedido(@AuthenticationPrincipal UsuarioDTO usuario, @RequestBody Pedido pedido) {
         Carrito carrito = carritoService.getCarritoByUsuario(usuario.getIdUsuario()).orElse(null);
@@ -69,8 +94,9 @@ public class PedidoResource {
             pedido.setFechaCreacion(now());
             pedido.setDireccion(direccionService.getDireccionById(pedido.getIdDireccion()).get());
             pedido.setTotal(carrito.getTotal());
-            pedido.setPago(pagoService.getPagoById(pedido.getIdPago()).orElse(null));
-            pedido.setEstado(EN_PROCESO.getEstado());
+            Pago pago = pagoService.getPagoById(pedido.getIdPago()).get();
+            pedido.setPago(pago);
+            pedido.setEstado(pedido.getEstado());
             Pedido pedidoCreado = pedidoService.createPedido(pedido);
             List<PedidoProducto> pedidoProductos = new ArrayList<>();
 
@@ -116,6 +142,7 @@ public class PedidoResource {
 
         if (pedidoActual != null) {
             pedidoActual.setEstado(pedido.getEstado());
+            pedidoActual.setFechaModificacion(now());
 
             return ResponseEntity.ok(
                     HttpResponse.builder()

@@ -46,7 +46,6 @@ public class Pedido {
     @Column(name = "id_pago", nullable = false)
     private Long idPago;
 
-    @JsonIgnore
     @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "id_pago", referencedColumnName = "id_pago", insertable = false, updatable = false)
     private Pago pago;
@@ -62,6 +61,9 @@ public class Pedido {
     @Column(name = "fecha_creacion", nullable = false, updatable = false,
             columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaCreacion;
+
+    @Column(name = "fecha_modificacion", columnDefinition = "ON UPDATE CURRENT_TIMESTAMP")
+    private LocalDateTime fechaModificacion;
 
     @Column(nullable = false)
     private BigDecimal total;

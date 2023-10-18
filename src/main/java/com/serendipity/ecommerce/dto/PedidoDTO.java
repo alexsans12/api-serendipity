@@ -1,6 +1,7 @@
 package com.serendipity.ecommerce.dto;
 
 import com.serendipity.ecommerce.domain.Direccion;
+import com.serendipity.ecommerce.domain.Pago;
 import com.serendipity.ecommerce.enumeration.EstadoPedido;
 import lombok.*;
 
@@ -19,8 +20,10 @@ public class PedidoDTO {
     private Long idPago;
     private Long idDireccion;
     private Direccion direccion;
+    private Pago pago;
     private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaModificacion;
     private BigDecimal total;
     private String estado;
-    private List<PedidoProductoDTO> productosEnPedido;
+    private List<PedidoProductoDTO> productosPedido;
 }

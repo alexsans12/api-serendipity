@@ -27,9 +27,8 @@ public class MetodoPago {
     @Column(name = "id_metodo_pago")
     private Integer idMetodoPago;
 
-    @Convert(converter = TipoPagoConverter.class)
-    @Column(nullable = false)
-    private TipoPago tipo;
+    @Column(name = "tipo", nullable = false)
+    private String tipo;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String detalle;

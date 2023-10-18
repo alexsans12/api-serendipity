@@ -43,9 +43,8 @@ public class Pago {
     @Column(nullable = false)
     private BigDecimal monto;
 
-    @Convert(converter = EstadoPagoConverter.class)
-    @Column(nullable = false)
-    private EstadoPago estado;
+    @Column(name = "estado", nullable = false)
+    private String estado;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false,
             columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")

@@ -12,6 +12,7 @@ import lombok.experimental.SuperBuilder;
 import java.math.BigDecimal;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_DEFAULT;
+import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
@@ -38,11 +39,11 @@ public class CarritoProducto {
     @Column(name = "cantidad", nullable = false)
     private int cantidad;
 
-    @ManyToOne(fetch = LAZY)
+    @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "id_carrito", referencedColumnName = "id_carrito", insertable = false, updatable = false)
     private Carrito carrito;
 
-    @ManyToOne(fetch = LAZY)
+    @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "id_producto", referencedColumnName = "id_producto", insertable = false, updatable = false)
     private Producto producto;
 

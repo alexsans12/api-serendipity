@@ -2,6 +2,8 @@ package com.serendipity.ecommerce.resource;
 
 import com.serendipity.ecommerce.domain.HttpResponse;
 import com.serendipity.ecommerce.domain.PaymentInfo;
+import com.serendipity.ecommerce.dtomapper.PaymentIntentDTOMapper;
+import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.service.CheckoutService;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.serendipity.ecommerce.dtomapper.PaymentIntentDTOMapper.toPaymentIntent;
 import static java.time.LocalTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpStatus.OK;
@@ -22,25 +25,12 @@ import static org.springframework.http.HttpStatus.OK;
 public class CheckoutResource {
     private final CheckoutService checkoutService;
 
-    @PostMapping("/purchase")
-    public ResponseEntity<HttpResponse> placeOrder(@RequestBody String purchase) {
-        return ResponseEntity.ok(
-                HttpResponse.builder()
-                        .timestamp(now().toString())
-                        .data(of("paymentIntent", ""))
-                        .message("Payment intent created successfully")
-                        .httpStatus(OK)
-                        .httpStatusCode(OK.value())
-                        .build()
-        );
-    }
-
     @PostMapping("/payment-intent")
     public ResponseEntity<HttpResponse> createPaymentIntent(@RequestBody PaymentInfo paymentInfo) throws StripeException {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("paymentIntent", checkoutService.createPaymentIntent(paymentInfo)))
+                        .data(of("paymentIntent", toPaymentIntent(checkoutService.createPaymentIntent(paymentInfo))))
                         .message("Payment intent created successfully")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())

@@ -20,7 +20,7 @@ public class PedidoDTOMapper {
         for (PedidoProducto pedidoProducto : pedidoProductos) {
             pedidoProductoDTOList.add(fromPedidoProducto(pedidoProducto));
         }
-        pedidoDTO.setProductosEnPedido(pedidoProductoDTOList);
+        pedidoDTO.setProductosPedido(pedidoProductoDTOList);
 
         return pedidoDTO;
     }
@@ -33,7 +33,7 @@ public class PedidoDTOMapper {
         for (PedidoProducto pedidoProducto : pedido.getPedidoProductos()) {
             pedidoProductoDTOList.add(fromPedidoProducto(pedidoProducto));
         }
-        pedidoDTO.setProductosEnPedido(pedidoProductoDTOList);
+        pedidoDTO.setProductosPedido(pedidoProductoDTOList);
 
         return pedidoDTO;
     }
