@@ -140,6 +140,7 @@ public class CarritoResource {
             carrito = new Carrito();
             carrito.setFechaCreacion(now());
             carrito.setIdUsuario(usuario.getIdUsuario());
+            carrito.setCarritoProductos(new ArrayList<>());
             carrito = carritoService.createCarrito(carrito);
         }
 

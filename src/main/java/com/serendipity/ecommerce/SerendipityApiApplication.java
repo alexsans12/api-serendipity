@@ -4,25 +4,19 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-
-import java.util.Arrays;
-import java.util.List;
 
 @SpringBootApplication //(exclude = { SecurityAutoConfiguration.class })
 public class SerendipityApiApplication {
-	private static final int STRENGTH = 12;
+    private static final int STRENGTH = 12;
 
-	public static void main(String[] args) {
-		SpringApplication.run(SerendipityApiApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(SerendipityApiApplication.class, args);
+    }
 
-	@Bean
-	public BCryptPasswordEncoder passwordEncode() {
-		return new BCryptPasswordEncoder(STRENGTH);
-	}
+    @Bean
+    public BCryptPasswordEncoder passwordEncode() {
+        return new BCryptPasswordEncoder(STRENGTH);
+    }
 
 	/*@Bean
 	public CorsFilter corsFilter() {

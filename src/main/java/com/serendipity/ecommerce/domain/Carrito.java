@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,4 +41,12 @@ public class Carrito {
     @JsonIgnore
     @OneToMany(mappedBy = "carrito", cascade = ALL, fetch = LAZY)
     private List<CarritoProducto> carritoProductos;
+
+    public BigDecimal getTotal() {
+        BigDecimal total = BigDecimal.ZERO;
+        for (CarritoProducto carritoProducto : carritoProductos) {
+            total = total.add(carritoProducto.getSubtotal());
+        }
+        return total;
+    }
 }

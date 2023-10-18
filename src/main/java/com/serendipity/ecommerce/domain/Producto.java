@@ -86,4 +86,7 @@ public class Producto {
 
     @OneToMany(mappedBy = "producto", fetch = EAGER)
     private List<ImagenProducto> imagenesProducto;
+
+    @OneToMany(mappedBy = "producto", fetch = LAZY, cascade = CascadeType.ALL)
+    private List<Review> reviews;
 }
