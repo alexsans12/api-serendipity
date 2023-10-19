@@ -12,8 +12,11 @@ import com.serendipity.ecommerce.repository.UsuarioRepository;
 import com.serendipity.ecommerce.rowmapper.RolRowMapper;
 import com.serendipity.ecommerce.rowmapper.UsuarioRowMapper;
 import com.serendipity.ecommerce.service.EmailService;
+import com.serendipity.ecommerce.utils.SmsUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -26,6 +29,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,20 +40,19 @@ import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import static com.serendipity.ecommerce.constant.Constants.DATE_FORMAT;
 import static com.serendipity.ecommerce.enumeration.RolType.ROL_USUARIO;
 import static com.serendipity.ecommerce.enumeration.VerificationType.ACCOUNT;
 import static com.serendipity.ecommerce.enumeration.VerificationType.PASSWORD;
 import static com.serendipity.ecommerce.query.RolQuery.SELECT_ROL_BY_NAME_QUERY;
 import static com.serendipity.ecommerce.query.RolQuery.UPDATE_ROL_TO_USUARIO_QUERY;
 import static com.serendipity.ecommerce.query.UsuarioQuery.*;
-import static com.serendipity.ecommerce.utils.SmsUtils.sendSMS;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static com.serendipity.ecommerce.constant.Constants.*;
 import static org.apache.commons.lang3.time.DateFormatUtils.format;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
 import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
@@ -63,10 +66,17 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     private final BCryptPasswordEncoder encoder;
     private final EmailService emailService;
 
+    @Autowired
+    private SmsUtils smsUtils;
+
+    @Value("${ui.app.url}")
+    private String uiAppUrl;
+
     @Override
     public Usuario create(Usuario usuario) {
         // Check the email is not already in use
-        if(getEmailCount(usuario.getEmail().trim().toLowerCase()) > 0) throw new ApiException("El correo electrónico ya está en uso. Por favor, ingrese otro correo electrónico y vuelva a intentarlo.");
+        if (getEmailCount(usuario.getEmail().trim().toLowerCase()) > 0)
+            throw new ApiException("El correo electrónico ya está en uso. Por favor, ingrese otro correo electrónico y vuelva a intentarlo.");
         // Save new user
         try {
             KeyHolder holder = new GeneratedKeyHolder();
@@ -127,8 +137,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         if (usuario == null) {
             log.error("Usuario no encontrado en la base de datos");
             throw new UsernameNotFoundException("Usuario no encontrado en la base de datos");
-        }
-        else {
+        } else {
             log.info("Usuario encontrado en la base de datos: {}", email);
             return new UsuarioPrincipal(usuario, rolRepository.getRolByUsuarioId(usuario.getIdUsuario()));
         }
@@ -155,7 +164,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         try {
             jdbcTemplate.update(DELETE_VERIFICATION_BY_USUARIO_ID, of("id", usuario.getIdUsuario()));
             jdbcTemplate.update(INSERT_VERIFICATION_CODE_QUERY, of("usuario_id", usuario.getIdUsuario(), "codigo", verificationCode, "fecha_expiracion", expirationDate));
-            sendSMS(usuario.getTelefono(), "From: Serendipity Ecommerce\n\nYour verification code is: " + verificationCode);
+            smsUtils.sendSMS(usuario.getTelefono(), "From: Serendipity Ecommerce\n\nYour verification code is: " + verificationCode);
             log.info("Código de verificación enviado: {}", verificationCode);
         } catch (Exception exception) {
             // If any error, throw an exception with proper message
@@ -166,12 +175,13 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
 
     @Override
     public Usuario verifyCode(String email, String code) {
-        if(isVerificationCodeExpired(code)) throw new ApiException("Este código de verificación ha expirado. Por favor, inicie sesión nuevamente.");
+        if (isVerificationCodeExpired(code))
+            throw new ApiException("Este código de verificación ha expirado. Por favor, inicie sesión nuevamente.");
 
         try {
             Usuario usuarioByCode = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_USUARIO_CODE_QUERY, of("code", code), new UsuarioRowMapper());
             Usuario usuarioByEmail = jdbcTemplate.queryForObject(SELECT_USUARIO_BY_EMAIL_QUERY, of("email", email), new UsuarioRowMapper());
-            if(requireNonNull(usuarioByCode).getEmail().equalsIgnoreCase(requireNonNull(usuarioByEmail).getEmail())) {
+            if (requireNonNull(usuarioByCode).getEmail().equalsIgnoreCase(requireNonNull(usuarioByEmail).getEmail())) {
                 jdbcTemplate.update(DELETE_CODE, of("code", code));
                 return usuarioByCode;
             } else {
@@ -186,7 +196,8 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
 
     @Override
     public void resetPassword(String email) {
-        if (getEmailCount(email.trim().toLowerCase()) <= 0) throw new ApiException("No hay cuenta asociada a este correo electrónico.");
+        if (getEmailCount(email.trim().toLowerCase()) <= 0)
+            throw new ApiException("No hay cuenta asociada a este correo electrónico.");
 
         try {
             String expirationDate = format(addDays(new Date(), 1), DATE_FORMAT);
@@ -205,7 +216,8 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
 
     @Override
     public Usuario verifyPasswordKey(String key) {
-        if (isLinkExpired(key, PASSWORD)) throw new ApiException("Este enlace ha expirado. Por favor, restablesca su contraseña nuevamente.");
+        if (isLinkExpired(key, PASSWORD))
+            throw new ApiException("Este enlace ha expirado. Por favor, restablesca su contraseña nuevamente.");
 
         try {
             return jdbcTemplate.queryForObject(SELECT_USUARIO_BY_PASSWORD_URL_QUERY, of("url", getVerificationUrl(key, PASSWORD.getType())), new UsuarioRowMapper());
@@ -231,11 +243,20 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
 
     @Override
     public void updatePassword(Long idUsuario, String password, String confirmPassword) {
-        if (!password.equals(confirmPassword)) throw new ApiException("Las contraseñas no coinciden. Por favor, inténtelo de nuevo.");
+        if (!password.equals(confirmPassword))
+            throw new ApiException("Las contraseñas no coinciden. Por favor, inténtelo de nuevo.");
 
         try {
-            jdbcTemplate.update(UPDATE_USUARIO_PASSWORD_BY_USUARIO_ID_QUERY, of("password", encoder.encode(password),"id_usuario", idUsuario));
+            Usuario usuario = getById(idUsuario);
+            jdbcTemplate.update(UPDATE_USUARIO_PASSWORD_BY_USUARIO_ID_QUERY, of("password", encoder.encode(password), "id_usuario", idUsuario));
             jdbcTemplate.update(DELETE_PASSWORD_VERIFICATION_BY_USUARIO_ID_QUERY, of("id", idUsuario));
+            if (!usuario.isEstado()) {
+                String verificationUrl = getVerificationUrl(UUID.randomUUID().toString(), ACCOUNT.getType());
+                // Save URL in verification table
+                jdbcTemplate.update(INSERT_VERIFICACION_CUENTA_URL_QUERY, of("idUsuario", usuario.getIdUsuario(), "url", verificationUrl, "fecha", now().plusDays(1)));
+                // Send email to user with verification URL
+                sendEmail(usuario.getNombre(), usuario.getEmail(), verificationUrl, ACCOUNT);
+            }
         } catch (Exception exception) {
             throw new ApiException("Un error inesperado ha ocurrido. Por favor, inténtelo de nuevo más tarde.");
         }
@@ -282,7 +303,8 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
 
     @Override
     public void updatePassword(Long idUsuario, String currentPassword, String newPassword, String confirmNewPassword) {
-        if (!newPassword.equals(confirmNewPassword)) throw new ApiException("Las contraseñas no coinciden. Por favor, inténtelo de nuevo.");
+        if (!newPassword.equals(confirmNewPassword))
+            throw new ApiException("Las contraseñas no coinciden. Por favor, inténtelo de nuevo.");
 
         Usuario usuario = getById(idUsuario);
         if (encoder.matches(currentPassword, usuario.getPassword())) {
@@ -322,7 +344,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     public Usuario toggleMfa(String email) {
         try {
             Usuario usuario = getUsuarioByEmail(email);
-            if(isBlank(usuario.getTelefono())) {
+            if (isBlank(usuario.getTelefono())) {
                 throw new ApiException("No se puede activar la autenticación de dos factores. Por favor, actualice su número de teléfono e inténtelo de nuevo.");
             }
             usuario.setUtilizaMfa(!usuario.isUtilizaMfa());
@@ -342,8 +364,8 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     }
 
     private void saveImage(String email, MultipartFile image) {
-        Path fileStorageLocation = Paths.get(System.getProperty("user.home")+"/Downloads/images/").toAbsolutePath().normalize();
-        if(!Files.exists(fileStorageLocation)) {
+        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/images/").toAbsolutePath().normalize();
+        if (!Files.exists(fileStorageLocation)) {
             try {
                 Files.createDirectories(fileStorageLocation);
             } catch (Exception exception) {
@@ -364,7 +386,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
 
     private String setImageUrl(String email) {
         return fromCurrentContextPath()
-                .path("/api/v1/usuario/image/" + email + ".png" )
+                .path("/api/v1/usuario/image/" + email + ".png")
                 .toUriString();
     }
 
@@ -390,7 +412,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
 
     private Boolean isLinkExpired(String key, VerificationType verificationType) {
         try {
-                return jdbcTemplate.queryForObject(SELECT_EXPIRATION_BY_URL_QUERY, of("url", getVerificationUrl(key, verificationType.getType())), Boolean.class);
+            return jdbcTemplate.queryForObject(SELECT_EXPIRATION_BY_URL_QUERY, of("url", getVerificationUrl(key, verificationType.getType())), Boolean.class);
         } catch (EmptyResultDataAccessException exception) {
             log.error(exception.getMessage());
             throw new ApiException("Este link no es válido. Por favor, restablesca su contraseña nuevamente");
@@ -445,8 +467,14 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
                 .addValue("modificado_por", usuario.getModificadoPor());
     }
 
-    private String getVerificationUrl(String token, String type) {
+    /*private String getVerificationUrl(String token, String type) {
         return fromCurrentContextPath()
+                .path("/verify/" + type + "/" + token)
+                .toUriString();
+    }*/
+
+    private String getVerificationUrl(String token, String type) {
+        return UriComponentsBuilder.fromHttpUrl(uiAppUrl)
                 .path("/verify/" + type + "/" + token)
                 .toUriString();
     }
