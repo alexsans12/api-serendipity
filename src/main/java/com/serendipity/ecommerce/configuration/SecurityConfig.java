@@ -71,7 +71,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowCredentials(true);
-        corsConfiguration.setAllowedOrigins(List.of("https://serendipity-app-e57e2.ondigitalocean.app/"));
+        corsConfiguration.setAllowedOrigins(List.of("https://serendipity-app-e57e2.ondigitalocean.app/", "http://localhost:4200"));
         //corsConfiguration.setAllowedOrigins(Arrays.asList("*"));
         corsConfiguration.setAllowedHeaders(Arrays.asList("Origin", "Access-Control-Allow-Origin", "Content-Type",
                 "Accept", "Jwt-Token", "Authorization", "Origin", "Accept", "X-Requested-With",
