@@ -9,6 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,6 +20,29 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
 
     @Override
+    public void sendVerificationEmail(String nombre, String email, String verificationUrl, VerificationType verificationType) {
+        try {
+            send(email, "eddalexcab@gmail.com", getEmailMessage(nombre, verificationUrl, verificationType), null);
+            log.info("Correo electrónico enviado a " + email);
+        } catch (Exception e) {
+            log.error("Error al enviar el correo electrónico a " + email, e);
+        }
+    }
+
+    public void send(String receiver, String sender, String message, String filenameAndLocation) {
+        MimeMessagePreparator preparator = mimeMessage -> {
+            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage);
+            messageHelper.setTo(receiver);
+            messageHelper.setFrom(sender);
+            messageHelper.setSubject("Serendipity Ecommerce - Correo de Verificación");
+            messageHelper.setText(message);
+            // Si tienes un archivo para adjuntar, descomenta la línea siguiente y proporciona la ubicación y el nombre del archivo
+            // messageHelper.addAttachment("Attachment", new File(filenameAndLocation));
+        };
+        this.mailSender.send(preparator);
+    }
+
+    /*@Override
     public void sendVerificationEmail(String nombre, String email, String verificationUrl, VerificationType verificationType) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -30,7 +55,7 @@ public class EmailServiceImpl implements EmailService {
         } catch (Exception e) {
             log.error("Error al enviar el correo electrónico a " + email, e);
         }
-    }
+    }*/
 
     private String getEmailMessage(String nombre, String verificationUrl, VerificationType verificationType) {
         switch (verificationType) {
