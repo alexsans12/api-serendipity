@@ -22,19 +22,22 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendVerificationEmail(String nombre, String email, String verificationUrl, VerificationType verificationType) {
         try {
-            send(email, "eddalexcab@gmail.com", getEmailMessage(nombre, verificationUrl, verificationType), null);
+            send(email, "eddalexcab@gmail.com", getEmailMessage(nombre, verificationUrl, verificationType), verificationType);
             log.info("Correo electrónico enviado a " + email);
         } catch (Exception e) {
             log.error("Error al enviar el correo electrónico a " + email, e);
         }
     }
 
-    public void send(String receiver, String sender, String message, String filenameAndLocation) {
+    public void send(String receiver, String sender, String message, VerificationType verificationType) {
         MimeMessagePreparator preparator = mimeMessage -> {
             MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage);
+            log.info("Enviando correo electrónico a " + receiver);
+            log.info("De " + sender);
+            log.info("Mensaje " + message);
             messageHelper.setTo(receiver);
             messageHelper.setFrom(sender);
-            messageHelper.setSubject("Serendipity Ecommerce - Correo de Verificación");
+            messageHelper.setSubject(String.format("Serendipity Ecommerce - %s Correo de Verificación", StringUtils.capitalize(verificationType.getType())));
             messageHelper.setText(message);
             // Si tienes un archivo para adjuntar, descomenta la línea siguiente y proporciona la ubicación y el nombre del archivo
             // messageHelper.addAttachment("Attachment", new File(filenameAndLocation));
