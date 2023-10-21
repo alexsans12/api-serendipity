@@ -1,4 +1,4 @@
-FROM maven:3.9.3 AS build
+FROM maven:3.9.4 AS build
 WORKDIR /app
 ARG CONTAINER_PORT
 COPY pom.xml /app
