@@ -8,8 +8,15 @@ import com.serendipity.ecommerce.repository.RolRepository;
 import com.serendipity.ecommerce.repository.UsuarioRepository;
 import com.serendipity.ecommerce.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.fromUsuario;
 

@@ -1,8 +1,12 @@
 package com.serendipity.ecommerce.repository;
 
+import com.serendipity.ecommerce.domain.Producto;
 import com.serendipity.ecommerce.domain.Usuario;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
+import org.springframework.data.domain.Page;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
@@ -10,7 +14,6 @@ import java.util.Collection;
 public interface UsuarioRepository<T extends Usuario> {
     /* Basic CRUD operations */
     T create(T data);
-    Collection<T> findAll(int page, int pageSize);
     T getById(Long id);
     T update(T data);
     Boolean delete(Long id);

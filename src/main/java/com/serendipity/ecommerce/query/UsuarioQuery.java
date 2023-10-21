@@ -2,6 +2,7 @@ package com.serendipity.ecommerce.query;
 
 public class UsuarioQuery {
 
+    public static final String SELECT_USUARIOS_QUERY = "SELECT * FROM usuario";
     public static final String SELECT_USUARIO_BY_EMAIL_QUERY = "SELECT * FROM usuario WHERE email = :email";
     public static final String SELECT_USUARIO_BY_USUARIO_CODE_QUERY = "SELECT * FROM usuario WHERE id_usuario = (SELECT id_usuario FROM verificacion_two_factors WHERE codigo = :code)";
     public static final String SELECT_EXPIRATION_BY_URL_QUERY = "SELECT fecha_expiracion < NOW() AS is_expired FROM restablecer_password WHERE url = :url";

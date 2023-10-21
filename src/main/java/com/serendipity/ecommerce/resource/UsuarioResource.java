@@ -1,9 +1,11 @@
 package com.serendipity.ecommerce.resource;
 
 import com.serendipity.ecommerce.domain.HttpResponse;
+import com.serendipity.ecommerce.domain.Rol;
 import com.serendipity.ecommerce.domain.Usuario;
 import com.serendipity.ecommerce.domain.UsuarioPrincipal;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
+import com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper;
 import com.serendipity.ecommerce.event.NewUsuarioEvento;
 import com.serendipity.ecommerce.exception.ApiException;
 import com.serendipity.ecommerce.form.*;
@@ -16,6 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -26,6 +29,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import static com.serendipity.ecommerce.constant.Constants.TOKEN_PREFIX;
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
@@ -79,7 +83,7 @@ public class UsuarioResource {
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", usuario, "eventos", eventoService.getEventsByUsuarioId(usuario.getIdUsuario()),"roles", rolService.getRoles()))
+                        .data(of("usuario", usuario, "eventos", eventoService.getEventsByUsuarioId(usuario.getIdUsuario()), "roles", rolService.getRoles()))
                         .message("Perfil de usuario obtenido exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -94,7 +98,7 @@ public class UsuarioResource {
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timestamp(now().toString())
-                        .data(of("usuario", updateUsuario, "eventos", eventoService.getEventsByUsuarioId(usuario.getIdUsuario()),"roles", rolService.getRoles()))
+                        .data(of("usuario", updateUsuario, "eventos", eventoService.getEventsByUsuarioId(usuario.getIdUsuario()), "roles", rolService.getRoles()))
                         .message("Perfil de usuario actualizado exitosamente")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())
@@ -189,7 +193,7 @@ public class UsuarioResource {
         eventPublisher.publishEvent(new NewUsuarioEvento(ACTUALIZACION_ROL, usuarioDTO.getEmail()));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "eventos", eventoService.getEventsByUsuarioId(usuarioDTO.getIdUsuario()),"roles", rolService.getRoles()))
+                        .data(of("usuario", usuarioService.getUsuarioById(usuarioDTO.getIdUsuario()), "eventos", eventoService.getEventsByUsuarioId(usuarioDTO.getIdUsuario()), "roles", rolService.getRoles()))
                         .timestamp(now().toString())
                         .message("Rol de usuario actualizado exitosamente")
                         .httpStatus(OK)
@@ -307,7 +311,7 @@ public class UsuarioResource {
 
     private UsuarioDTO authenticate(String email, String password) {
         try {
-            if(null != usuarioService.getUsuarioByEmail(email))
+            if (null != usuarioService.getUsuarioByEmail(email))
                 eventPublisher.publishEvent(new NewUsuarioEvento(INTENTO_LOGIN, email));
 
             Authentication authentication = authenticationManager.authenticate(unauthenticated(email, password));
@@ -317,7 +321,7 @@ public class UsuarioResource {
 
             return loggedInUsuario;
         } catch (Exception exception) {
-            if(null != usuarioService.getUsuarioByEmail(email))
+            if (null != usuarioService.getUsuarioByEmail(email))
                 eventPublisher.publishEvent(new NewUsuarioEvento(FALLO_LOGIN, email));
             processError(request, response, exception);
             throw new ApiException(exception.getMessage());
@@ -333,7 +337,7 @@ public class UsuarioResource {
                 HttpResponse.builder()
                         .timestamp(now().toString())
                         .data(of("usuario", usuario, "access_token", tokenProvider.createAccessToken(getUsuarioPrincipal(usuario))
-                        , "refresh_token", tokenProvider.createRefreshToken(getUsuarioPrincipal(usuario))))
+                                , "refresh_token", tokenProvider.createRefreshToken(getUsuarioPrincipal(usuario))))
                         .message("Inicio de sesión exitoso")
                         .httpStatus(OK)
                         .httpStatusCode(OK.value())

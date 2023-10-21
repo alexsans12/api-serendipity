@@ -3,7 +3,10 @@ package com.serendipity.ecommerce.service;
 import com.serendipity.ecommerce.domain.Usuario;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.form.UpdateProfileForm;
+import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Collection;
 
 public interface UsuarioService {
     UsuarioDTO getUsuarioById(Long id);
