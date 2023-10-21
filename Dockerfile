@@ -6,11 +6,11 @@ RUN mvn dependency:resolve
 COPY . /app
 RUN mvn clean package -DskipTests -X
 
-FROM openjdk:20
+FROM openjdk:17
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE ${CONTAINER_PORT}
 CMD ["java", "-jar", "app.jar"]
 
 LABEL authors="Alexsans"
-LABEL version="1.2.0"
+LABEL version="1.2.3"
 LABEL description="This is the base docker image for the spring boot application"

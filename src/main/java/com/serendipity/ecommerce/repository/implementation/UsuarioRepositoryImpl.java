@@ -385,22 +385,22 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     }
 
     private void sendEmail(String nombre, String email, String verificationUrl, VerificationType verificationType) {
-        CompletableFuture.runAsync(() -> {
+        /*CompletableFuture.runAsync(() -> {
             emailService.sendVerificationEmail(nombre, email, verificationUrl, verificationType);
         }).exceptionally(exception -> {
             // Log or handle the exception here
             //logger.error("Error sending email: ", exception);
             System.out.println("Error sending email: " + exception);
             return null;
-        });
+        });*/
 
-        /*CompletableFuture.runAsync(() -> {
+        CompletableFuture.runAsync(() -> {
             try {
                 emailService.sendVerificationEmail(nombre, email, verificationUrl, verificationType);
             } catch (Exception exception) {
                 throw new ApiException("No se pudo enviar el correo electrónico de verificación. Por favor, inténtelo de nuevo más tarde.");
             }
-        });*/
+        });
 
         /*CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
             try {
