@@ -18,9 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -38,7 +35,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -389,7 +385,14 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     }
 
     private void sendEmail(String nombre, String email, String verificationUrl, VerificationType verificationType) {
-        CompletableFuture.runAsync(() -> emailService.sendVerificationEmail(nombre, email, verificationUrl, verificationType));
+        CompletableFuture.runAsync(() -> {
+            emailService.sendVerificationEmail(nombre, email, verificationUrl, verificationType);
+        }).exceptionally(exception -> {
+            // Log or handle the exception here
+            //logger.error("Error sending email: ", exception);
+            System.out.println("Error sending email: " + exception);
+            return null;
+        });
 
         /*CompletableFuture.runAsync(() -> {
             try {
