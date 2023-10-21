@@ -12,5 +12,5 @@ EXPOSE ${CONTAINER_PORT}
 CMD ["java", "-jar", "app.jar"]
 
 LABEL authors="Alexsans"
-LABEL version="1.1.0"
+LABEL version="1.2.0"
 LABEL description="This is the base docker image for the spring boot application"
