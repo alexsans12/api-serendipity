@@ -38,6 +38,8 @@ import java.nio.file.Paths;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.serendipity.ecommerce.constant.Constants.DATE_FORMAT;
 import static com.serendipity.ecommerce.enumeration.RolType.ROL_USUARIO;
@@ -385,22 +387,23 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     }
 
     private void sendEmail(String nombre, String email, String verificationUrl, VerificationType verificationType) {
-        /*CompletableFuture.runAsync(() -> {
+        /*CompletableFuture.runAsync(() -> emailService.sendVerificationEmail(firstName, email, verificationUrl, verificationType));*/
+
+        ExecutorService emailExecutor = Executors.newFixedThreadPool(10); // or another type of ExecutorService
+        CompletableFuture.runAsync(() -> {
             emailService.sendVerificationEmail(nombre, email, verificationUrl, verificationType);
-        }).exceptionally(exception -> {
-            // Log or handle the exception here
-            //logger.error("Error sending email: ", exception);
+        }, emailExecutor).exceptionally(exception -> {
             System.out.println("Error sending email: " + exception);
             return null;
-        });*/
+        });
 
-        CompletableFuture.runAsync(() -> {
+        /*CompletableFuture.runAsync(() -> {
             try {
                 emailService.sendVerificationEmail(nombre, email, verificationUrl, verificationType);
             } catch (Exception exception) {
                 throw new ApiException("No se pudo enviar el correo electrónico de verificación. Por favor, inténtelo de nuevo más tarde.");
             }
-        });
+        });*/
 
         /*CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
             try {
