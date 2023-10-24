@@ -13,6 +13,7 @@ public interface CategoriaService {
     Page<Categoria> getCategorias(int page, int size);
     Iterable<Categoria> getCategorias();
     Categoria getCategoriaById(Long id);
+    Categoria getCategoriaByNombre(String nombre);
     void addProductoToCategoria(Long productoId, Long categoriaId);
     List<CategoriaHierarchyDTO> getCategoriasConHijas();
 }

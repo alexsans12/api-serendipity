@@ -360,7 +360,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     }
 
     private void saveImage(String email, MultipartFile image) {
-        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/images/").toAbsolutePath().normalize();
+        Path fileStorageLocation = Paths.get("/app/images/usuarios/").toAbsolutePath().normalize();
         if (!Files.exists(fileStorageLocation)) {
             try {
                 Files.createDirectories(fileStorageLocation);
