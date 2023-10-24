@@ -54,6 +54,11 @@ public class CategoriaServiceImpl implements CategoriaService {
     }
 
     @Override
+    public Categoria getCategoriaByNombre(String nombre) {
+        return categoriaRepository.findByNombre(nombre);
+    }
+
+    @Override
     public void addProductoToCategoria(Long productoId, Long categoriaId) {
         Categoria categoria = categoriaRepository.findById(categoriaId).get();
         productoRepository.findById(productoId).ifPresent(producto -> {

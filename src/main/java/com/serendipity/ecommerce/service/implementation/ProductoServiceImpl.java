@@ -75,6 +75,7 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
+    @Transactional
     public Page<Producto> searchProductosByCategoria(String categoria, int page, int size) {
         // Fetch the Productos by Categoria ID
         return productoRepository.findByCategoriaNombre(categoria, of(page, size));

@@ -248,7 +248,7 @@ public class UsuarioResource {
     @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
     public byte[] getProfileImage(@PathVariable("fileName") String fileName) {
         try {
-            return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/" + fileName));
+            return Files.readAllBytes(Paths.get("/app/images/usuarios/" + fileName).toAbsolutePath().normalize());
         } catch (IOException e) {
             throw new ApiException("Error al obtener la imagen del usuario " + fileName);
         }
