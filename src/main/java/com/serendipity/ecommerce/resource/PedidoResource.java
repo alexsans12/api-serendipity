@@ -32,6 +32,7 @@ public class PedidoResource {
     private final PagoService pagoService;
     private final DireccionService direccionService;
     private final CarritoService carritoService;
+    private final ProductoService productoService;
 
     @GetMapping("/list")
     public ResponseEntity<HttpResponse> getPedidos(@RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
@@ -110,6 +111,7 @@ public class PedidoResource {
                 pedidoProducto.setDescuento(carritoProducto.getProducto().getDescuento());
                 pedidoProducto.setSubtotal(carritoProducto.getSubtotal());
                 pedidoProductos.add(pedidoProductoService.createPedidoProducto(pedidoProducto));
+                productoService.updateStock(carritoProducto.getIdProducto(), -carritoProducto.getCantidad());
             }
 
             carritoService.deleteCarrito(carrito.getIdCarrito());
@@ -147,7 +149,7 @@ public class PedidoResource {
             return ResponseEntity.ok(
                     HttpResponse.builder()
                             .timestamp(now().toString())
-                            .data(of("pedido", pedidoService.updatePedido(pedidoActual)))
+                            .data(of("pedido", fromPedido(pedidoService.updatePedido(pedidoActual))))
                             .message("Pedido actualizado correctamente")
                             .httpStatus(OK)
                             .httpStatusCode(OK.value())

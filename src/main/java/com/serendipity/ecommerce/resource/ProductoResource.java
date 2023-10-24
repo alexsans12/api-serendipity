@@ -2,6 +2,7 @@ package com.serendipity.ecommerce.resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.serendipity.ecommerce.domain.Categoria;
 import com.serendipity.ecommerce.domain.HttpResponse;
 import com.serendipity.ecommerce.domain.ImagenProducto;
 import com.serendipity.ecommerce.domain.Producto;
@@ -143,7 +144,7 @@ public class ProductoResource {
             Producto existingProducto = productoService.getProductoById(producto.getIdProducto());
             producto.setCreadoPor(existingProducto.getCreadoPor());
             producto.setFechaCreacion(existingProducto.getFechaCreacion());
-            producto.setImagenesProducto(saveImages(producto.getSku(), images, producto.getIdProducto()));
+            producto.setImagenesProducto(saveImages(existingProducto.getSku(), images, producto.getIdProducto()));
             producto.setCategoria(categoriaService.getCategoriaById(producto.getIdCategoria()));
             producto.setModificadoPor(usuarioDTO.getIdUsuario());
             producto.setFechaModificacion(now());
@@ -195,7 +196,7 @@ public class ProductoResource {
     @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
     public byte[] getProfileImage(@PathVariable("fileName") String fileName) {
         try {
-            return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/producto/" + fileName));
+            return Files.readAllBytes(Paths.get("/app/images/producto/" + fileName).toAbsolutePath().normalize());
         } catch (IOException e) {
             throw new ApiException("Error al obtener la imagen del producto con SKU " + fileName);
         }
@@ -208,7 +209,7 @@ public class ProductoResource {
     }
 
     private void saveImage(String nombre, MultipartFile image) {
-        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/images/producto/").toAbsolutePath().normalize();
+        Path fileStorageLocation = Paths.get("/app/images/producto/").toAbsolutePath().normalize();
         if (!Files.exists(fileStorageLocation)) {
             try {
                 Files.createDirectories(fileStorageLocation);
@@ -229,7 +230,7 @@ public class ProductoResource {
     }
 
     private void deleteImage(String nombre) {
-        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/images/producto/").toAbsolutePath().normalize();
+        Path fileStorageLocation = Paths.get("/app/images/producto/").toAbsolutePath().normalize();
         Path filePath = fileStorageLocation.resolve(nombre + ".png");
 
         try {

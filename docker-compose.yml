@@ -1,5 +1,7 @@
 services:
   serendipity-api:
+    volumes:
+      - "/data/serendipity/images:/app/images"
     container_name: serendipity-api-container
     build:
       context: .
