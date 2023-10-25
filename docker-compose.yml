@@ -1,13 +1,11 @@
 services:
   serendipity-api:
-    volumes:
-      - "/data/serendipity/images:/app/images"
     container_name: serendipity-api-container
     build:
       context: .
       args:
         CONTAINER_PORT: ${CONTAINER_PORT}
-    image: serendipity-api:v1.2.2
+    image: serendipity-api:v1.2.3
     restart: unless-stopped
     env_file:
       - ${ENV_FILE}
