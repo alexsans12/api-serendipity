@@ -2,25 +2,31 @@ package com.serendipity.ecommerce.resource;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.serendipity.ecommerce.domain.Categoria;
 import com.serendipity.ecommerce.domain.HttpResponse;
 import com.serendipity.ecommerce.domain.ImagenProducto;
 import com.serendipity.ecommerce.domain.Producto;
 import com.serendipity.ecommerce.dto.UsuarioDTO;
 import com.serendipity.ecommerce.dtomapper.ProductoDTOMapper;
 import com.serendipity.ecommerce.exception.ApiException;
-import com.serendipity.ecommerce.service.*;
+import com.serendipity.ecommerce.service.CategoriaService;
+import com.serendipity.ecommerce.service.ImagenProductoService;
+import com.serendipity.ecommerce.service.ProductoService;
+import com.serendipity.ecommerce.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,13 +34,11 @@ import java.util.Optional;
 
 import static com.serendipity.ecommerce.dtomapper.ProductoDTOMapper.fromProducto;
 import static com.serendipity.ecommerce.dtomapper.UsuarioDTOMapper.toUsuario;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
-import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
 
 @RestController
 @RequestMapping("/api/v1/producto")
@@ -46,6 +50,11 @@ public class ProductoResource {
     private final UsuarioService usuarioService;
     private final CategoriaService categoriaService;
     private final ObjectMapper objectMapper;
+
+    private final S3Client s3Client;
+
+    @Value("${do.space.bucket}")
+    private String doSpaceBucket;
 
     @GetMapping("/list")
     public ResponseEntity<HttpResponse> getProductos(@RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
@@ -172,7 +181,7 @@ public class ProductoResource {
     }
 
     @PutMapping("/update/stock")
-    public ResponseEntity<HttpResponse> updateStockProducto(@AuthenticationPrincipal UsuarioDTO usuarioDTO, @RequestBody Producto producto) {
+    public ResponseEntity<HttpResponse> updateStockProducto(@AuthenticationPrincipal UsuarioDTO usuarioDTO, @org.springframework.web.bind.annotation.RequestBody Producto producto) {
         Producto productoOriginal = productoService.getProductoById(producto.getIdProducto());
         productoOriginal.setModificadoPor(usuarioDTO.getIdUsuario());
         productoOriginal.setFechaModificacion(now());
@@ -202,13 +211,18 @@ public class ProductoResource {
         }
     }
 
-    private String setImageUrl(String nombre) {
+    /*private String setImageUrl(String nombre) {
         return fromCurrentContextPath()
                 .path("/api/v1/producto/image/" + nombre + ".png")
                 .toUriString();
+    }*/
+
+    private String setImageUrl(String imageName) {
+        // Aquí asumimos que todas las imágenes son PNG. Si no es así, ajusta la extensión adecuadamente.
+        return "https://" + doSpaceBucket + ".nyc3.digitaloceanspaces.com/producto/" + imageName + ".png";
     }
 
-    private void saveImage(String nombre, MultipartFile image) {
+    /*private void saveImage(String nombre, MultipartFile image) {
         Path fileStorageLocation = Paths.get("/app/images/producto/").toAbsolutePath().normalize();
         if (!Files.exists(fileStorageLocation)) {
             try {
@@ -227,9 +241,36 @@ public class ProductoResource {
             throw new ApiException(exception.getMessage());
         }
         log.info("Imagen guardada con éxito, {}", fileStorageLocation);
+    }*/
+
+    private void saveImage(String nombre, MultipartFile image) {
+        String key = "producto/" + nombre + ".png";
+
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(doSpaceBucket)
+                    .key(key)
+                    .contentLength((long) image.getBytes().length)
+                    .contentType(image.getContentType())
+                    .acl("public-read")
+                    .build();
+
+            PutObjectAclRequest aclRequest = PutObjectAclRequest.builder()
+                    .bucket(doSpaceBucket)
+                    .key(key)
+                    .acl("public-read")
+                    .build();
+
+            this.s3Client.putObject(putObjectRequest, RequestBody.fromBytes(image.getBytes()));
+
+            log.info("Imagen guardada con éxito en S3, Bucket: {}, Key: {}", doSpaceBucket, key);
+        } catch (S3Exception | IOException exception) {
+            log.error("Error al guardar imagen en S3", exception);
+            throw new ApiException("Error al guardar imagen en S3: " + exception.getMessage());
+        }
     }
 
-    private void deleteImage(String nombre) {
+    /*private void deleteImage(String nombre) {
         Path fileStorageLocation = Paths.get("/app/images/producto/").toAbsolutePath().normalize();
         Path filePath = fileStorageLocation.resolve(nombre + ".png");
 
@@ -245,9 +286,27 @@ public class ProductoResource {
             log.error(exception.getMessage());
             throw new ApiException(exception.getMessage());
         }
+    }*/
+
+    private void deleteImage(String nombre) {
+        String key = "producto/" + nombre + ".png"; // Ruta del archivo en S3
+
+        try {
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(doSpaceBucket)
+                    .key(key)
+                    .build();
+
+            DeleteObjectResponse response = s3Client.deleteObject(deleteObjectRequest);
+
+            log.info("Imagen eliminada con éxito en S3, Bucket: {}, Key: {}", doSpaceBucket, key);
+        } catch (Exception exception) {
+            log.error("Error al eliminar imagen en S3", exception);
+            throw new ApiException("Error al eliminar imagen en S3: " + exception.getMessage());
+        }
     }
 
-    private List<ImagenProducto> saveImages(String SKU, MultipartFile[] images, Long idProducto) {
+    /*private List<ImagenProducto> saveImages(String SKU, MultipartFile[] images, Long idProducto) {
         List<ImagenProducto> imagenesActuales = imagenProductoService.getImagenProductoByIdProducto(idProducto);
         for (ImagenProducto imagenProducto : imagenesActuales) {
             deleteImage(imagenProducto.getUrl().substring(imagenProducto.getUrl().lastIndexOf("/") + 1, imagenProducto.getUrl().length() - 4));
@@ -265,6 +324,35 @@ public class ProductoResource {
 
             imagenProductoService.createImagenProducto(imagenProducto);
         }
+        return imagenes;
+    }*/
+
+    private List<ImagenProducto> saveImages(String SKU, MultipartFile[] images, Long idProducto) {
+        List<ImagenProducto> imagenesActuales = imagenProductoService.getImagenProductoByIdProducto(idProducto);
+
+        // Elimina imágenes actuales de S3 y registros de la base de datos
+        for (ImagenProducto imagenProducto : imagenesActuales) {
+            String imageName = imagenProducto.getUrl().substring(imagenProducto.getUrl().lastIndexOf("/") + 1, imagenProducto.getUrl().length() - 4);
+            deleteImage(imageName);
+        }
+
+        imagenProductoService.deleteImagenProductoByIdProducto(idProducto);
+
+        List<ImagenProducto> imagenes = new ArrayList<>();
+        int iterationCount = 1;
+
+        // Guarda nuevas imágenes en S3 y crea nuevos registros en la base de datos
+        for (MultipartFile image : images) {
+            String nombreImagen = SKU + "_" + iterationCount++;
+            saveImage(nombreImagen, image);
+            ImagenProducto imagenProducto = new ImagenProducto();
+            imagenProducto.setUrl(setImageUrl(nombreImagen));
+            imagenProducto.setIdProducto(idProducto);
+            imagenes.add(imagenProducto);
+
+            imagenProductoService.createImagenProducto(imagenProducto);
+        }
+
         return imagenes;
     }
 }
