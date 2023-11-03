@@ -159,6 +159,7 @@ public class ProductoResource {
             producto.setFechaModificacion(now());
 
             Producto updateProducto = productoService.updateProducto(producto);
+            updateProducto.setSku(existingProducto.getSku());
             updateProducto.setCreadoPor(existingProducto.getCreadoPor());
             updateProducto.setFechaCreacion(existingProducto.getFechaCreacion());
             updateProducto.setCreadoPorUsuario(toUsuario(usuarioService.getUsuarioById(producto.getCreadoPor())));

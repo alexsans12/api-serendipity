@@ -30,6 +30,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectAclRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -66,12 +71,16 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
     private final RolRepository<Rol> rolRepository;
     private final BCryptPasswordEncoder encoder;
     private final EmailService emailService;
+    private final S3Client s3Client;
 
     @Autowired
     private SmsUtils smsUtils;
 
     @Value("${ui.app.url}")
     private String uiAppUrl;
+
+    @Value("${do.space.bucket}")
+    private String doSpaceBucket;
 
     @Override
     public Usuario create(Usuario usuario) {
@@ -359,7 +368,7 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
         jdbcTemplate.update(UPDATE_USUARIO_IMAGE_QUERY, of("url_foto", urlFoto, "id_usuario", usuarioDTO.getIdUsuario()));
     }
 
-    private void saveImage(String email, MultipartFile image) {
+    /*private void saveImage(String email, MultipartFile image) {
         Path fileStorageLocation = Paths.get("/app/images/usuarios/").toAbsolutePath().normalize();
         if (!Files.exists(fileStorageLocation)) {
             try {
@@ -378,12 +387,45 @@ public class UsuarioRepositoryImpl implements UsuarioRepository<Usuario>, UserDe
             throw new ApiException(exception.getMessage());
         }
         log.info("Imagen guardada con éxito, {}", fileStorageLocation);
+    }*/
+
+    private void saveImage(String email, MultipartFile image) {
+        String key = "usuario/" + email + ".png";
+
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(doSpaceBucket)
+                    .key(key)
+                    .contentLength((long) image.getBytes().length)
+                    .contentType(image.getContentType())
+                    .acl("public-read")
+                    .build();
+
+            PutObjectAclRequest aclRequest = PutObjectAclRequest.builder()
+                    .bucket(doSpaceBucket)
+                    .key(key)
+                    .acl("public-read")
+                    .build();
+
+            this.s3Client.putObject(putObjectRequest, RequestBody.fromBytes(image.getBytes()));
+
+            log.info("Imagen guardada con éxito en S3, Bucket: {}, Key: {}", doSpaceBucket, key);
+        } catch (S3Exception | IOException exception) {
+            log.error("Error al guardar imagen en S3", exception);
+            throw new ApiException("Error al guardar imagen en S3: " + exception.getMessage());
+        }
     }
 
-    private String setImageUrl(String email) {
+
+    /*private String setImageUrl(String email) {
         return fromCurrentContextPath()
                 .path("/api/v1/usuario/image/" + email + ".png")
                 .toUriString();
+    }*/
+
+    private String setImageUrl(String email) {
+        // Aquí asumimos que todas las imágenes son PNG. Si no es así, ajusta la extensión adecuadamente.
+        return "https://" + doSpaceBucket + ".nyc3.digitaloceanspaces.com/usuario/" + email + ".png";
     }
 
     private void sendEmail(String nombre, String email, String verificationUrl, VerificationType verificationType) {
